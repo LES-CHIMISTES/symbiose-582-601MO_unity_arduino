@@ -40,15 +40,15 @@ void setup() {
 
 void loop() {
 
-  if ( millis() - monChronoDepart >= 20 ) { 
+  if ( millis() - monChronoDepart >= 75 ) { 
     monChronoDepart = millis();   
 
     int angle = myPbHub.analogRead(CANAL_ANGLE);
     int faderX = myPbHub.analogRead(CANAL_FADER_X);
     int faderY = myPbHub.analogRead(CANAL_FADER_Y);
-    int key1 = myPbHub.digitalRead(CANAL_KEY1);
-    int key2 = myPbHub.digitalRead(CANAL_KEY2);
-    int key3 = myPbHub.digitalRead(CANAL_KEY3);
+    int key1 = 1 - myPbHub.digitalRead(CANAL_KEY1);
+    int key2 = 1 - myPbHub.digitalRead(CANAL_KEY2);
+    int key3 = 1 - myPbHub.digitalRead(CANAL_KEY3);
 
     monOsc.sendInt("/angle", angle);
     monOsc.sendInt("/faderX", faderX);
