@@ -14,12 +14,12 @@ MicroOscSlip<1024> monOsc(&Serial);
 #define CANAL_KEY3 5
 
 unsigned long monChronoDepart; // DEPART DE MON CHRONOMÈTRE
-// unsigned long monChronoDebug;  // CHRONO POUR DEBUG
+unsigned long monChronoDebug;  // CHRONO POUR DEBUG
 
 void setup()
 {
   monChronoDepart = millis(); // TEMPS DE DÉPART
-  // monChronoDebug = millis();
+  monChronoDebug = millis();
 
   // Configuration M5Unified pour AtomS3
   auto cfg = M5.config();       // Assign a structure for initializing M5Stack
@@ -68,7 +68,7 @@ void loop()
       monOsc.sendFloat("/gyro/z", data.gyro.z);
 
       // DEBUG
-      /*if (millis() - monChronoDebug >= 300)
+      if (millis() - monChronoDebug >= 300)
       {
         monChronoDebug = millis();
 
@@ -96,7 +96,7 @@ void loop()
         Serial.println(data.gyro.y);
         Serial.print("Gyro Z: ");
         Serial.println(data.gyro.z);
-      }*/
+      }
     }
   }
 }
