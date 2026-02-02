@@ -1,4 +1,4 @@
-#N canvas 1164 175 1600 857 12;
+#N canvas 4 4 1600 857 12;
 #X obj 42 169 comport;
 #X msg 50 22 devices;
 #X text 110 21 Lister les ports dans la fenêtre Pd;
@@ -17,7 +17,7 @@
 #X floatatom 311 433 5 0 0 0 - - - 0;
 #X obj 255 366 route x y z;
 #X msg 75 60 close \, baud 115200 \, open 5;
-#X obj 171 277 print OSC;
+#X obj 162 265 print OSC;
 #X obj 42 277 list trim;
 #X text 73 387 ACCÉLÉRATEUR;
 #X text 254 391 GYRO;
@@ -87,7 +87,6 @@
 #X connect 1 0 0 0;
 #X connect 3 0 0 0;
 #X connect 5 0 7 0;
-#X connect 6 0 18 0;
 #X connect 6 0 19 0;
 #X connect 7 0 6 0;
 #X connect 8 0 7 1;
