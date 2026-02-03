@@ -10,6 +10,7 @@ public class OSCInputManager : MonoBehaviour
     public MeshEauController meshEauController;
     public MeshFeuController meshFeuController;
     public BecherController becherController;
+    public EventGel eventGel;
 
     // Variables pour stocker les valeurs OSC
     private float accelX, accelY, accelZ;
@@ -84,6 +85,11 @@ public class OSCInputManager : MonoBehaviour
         if (meshFeuController != null)
         {
             meshFeuController.UpdateScale(value);
+        }
+        // event gel
+        if (eventGel != null && eventGel.gameObject.activeSelf)
+        {
+            eventGel.UpdatePotentiometre(value);
         }
 
         //Debug.Log("ANGLE = " + value);
