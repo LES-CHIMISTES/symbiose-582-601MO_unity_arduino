@@ -5,7 +5,8 @@ public class MeshEauController : MonoBehaviour
     public float scaleMin = 0f;
     public float scaleMax = 2f; // hauteur maximale du mesh
     public float seuilAgitation = 0.3f; // seuil
-    public float vitesseRemplissage = 0.5f; // vitesse eau se remploit
+    public float vitesseRemplissage = 0.5f; // vitesse eau se remplit
+    public float vitesseEvaporation = 0.05f; // vitesse à laquelle l'eau s'évapore (diminue)
 
     public Color couleurVerte = new Color(0f, 1f, 0f);
     public Color couleurBleue = new Color(0f, 0f, 1f);
@@ -14,15 +15,18 @@ public class MeshEauController : MonoBehaviour
 
     private Renderer meshRenderer;
     private Material meshMaterial;
-    private float niveauEauActuel = 0f; // eau accumulé (0 à 1)
+    private float niveauEauActuel = 0f; // eau accumulée (0 à 1)
+    private Vector3 positionInitiale; // position de départ du mesh
 
     void Start()
     {
         meshRenderer = GetComponent<Renderer>();
         meshMaterial = new Material(meshRenderer.material);
         meshRenderer.material = meshMaterial;
-
         meshMaterial.color = couleurDefaut;
+
+        // save la position initiale
+        positionInitiale = transform.localPosition;
 
         // scale à 0/min
         transform.localScale = new Vector3(
@@ -34,12 +38,29 @@ public class MeshEauController : MonoBehaviour
 
     void Update()
     {
+        // évaporation constente
+        niveauEauActuel -= vitesseEvaporation * Time.deltaTime;
+        niveauEauActuel = Mathf.Clamp01(niveauEauActuel); // reste entre 0 et 1
+
         // scale selon état niveau eau
         float targetScaleY = Mathf.Lerp(scaleMin, scaleMax, niveauEauActuel);
+
+        // calc le décalage de position pour que ça scale depuis le bas
+        // qd scale, le centre monte de la moitié de la différence
+        float decalageY = (targetScaleY - scaleMin) / 2f;
+
+        // applique le scale
         transform.localScale = new Vector3(
             transform.localScale.x,
             targetScaleY,
             transform.localScale.z
+        );
+
+        // applique le décalage Y pour compenser
+        transform.localPosition = new Vector3(
+            positionInitiale.x,
+            positionInitiale.y + decalageY,
+            positionInitiale.z
         );
     }
 
@@ -49,10 +70,9 @@ public class MeshEauController : MonoBehaviour
         // dépasse seuil, remplissage
         if (valeurAccel > seuilAgitation)
         {
-            // augment proprotionellement au mouvement
+            // augmente proportionnellement au mouvement
             float augmentation = (valeurAccel - seuilAgitation) * vitesseRemplissage * Time.deltaTime;
             niveauEauActuel += augmentation;
-
             // clamp entre 0 et 1
             niveauEauActuel = Mathf.Clamp01(niveauEauActuel);
         }
