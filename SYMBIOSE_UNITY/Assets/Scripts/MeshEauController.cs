@@ -2,12 +2,18 @@ using UnityEngine;
 
 public class MeshEauController : MonoBehaviour
 {
+    [Header("Paramètres de remplissage")]
     public float scaleMin = 0f;
-    public float scaleMax = 2f; // hauteur maximale du mesh
-    public float seuilAgitation = 0.3f; // seuil
-    public float vitesseRemplissage = 0.5f; // vitesse eau se remplit
+    public float scaleMax = 1f; // hauteur maximale du mesh
+    public float seuilAgitation = 0.05f; // seuil
+    public float vitesseRemplissage = 15f; // vitesse eau se remplit
     public float vitesseEvaporation = 0.05f; // vitesse à laquelle l'eau s'évapore (diminue)
 
+    [Header("Position Z cible")]
+    public float positionZMin = -0.00122f; // position Z quand scale = 0
+    public float positionZMax = 0f; // position Z quand scale = 1
+
+    [Header("Couleurs")]
     public Color couleurVerte = new Color(0f, 1f, 0f);
     public Color couleurBleue = new Color(0f, 0f, 1f);
     public Color couleurMauve = new Color(0.6f, 0f, 1f);
@@ -16,6 +22,7 @@ public class MeshEauController : MonoBehaviour
     private Renderer meshRenderer;
     private Material meshMaterial;
     private float niveauEauActuel = 0f; // eau accumulée (0 à 1)
+    private Vector3 scaleInitial; // scale de départ (pour X et Y)
     private Vector3 positionInitiale; // position de départ du mesh
 
     void Start()
@@ -25,42 +32,51 @@ public class MeshEauController : MonoBehaviour
         meshRenderer.material = meshMaterial;
         meshMaterial.color = couleurDefaut;
 
+        // save le scale initial (pour garder les valeurs X et Y)
+        scaleInitial = transform.localScale;
+
         // save la position initiale
         positionInitiale = transform.localPosition;
 
         // scale à 0/min
         transform.localScale = new Vector3(
-            transform.localScale.x,
-            scaleMin,
-            transform.localScale.z
+            scaleInitial.x,
+            scaleInitial.y,
+            scaleMin
+        );
+
+        // position à positionZMin au départ
+        transform.localPosition = new Vector3(
+            positionInitiale.x,
+            positionInitiale.y,
+            positionZMin
         );
     }
 
     void Update()
     {
-        // évaporation constente
+        // évaporation constante
         niveauEauActuel -= vitesseEvaporation * Time.deltaTime;
         niveauEauActuel = Mathf.Clamp01(niveauEauActuel); // reste entre 0 et 1
 
         // scale selon état niveau eau
-        float targetScaleY = Mathf.Lerp(scaleMin, scaleMax, niveauEauActuel);
+        float targetScale = Mathf.Lerp(scaleMin, scaleMax, niveauEauActuel);
 
-        // calc le décalage de position pour que ça scale depuis le bas
-        // qd scale, le centre monte de la moitié de la différence
-        float decalageY = (targetScaleY - scaleMin) / 2f;
+        // position Z interpolée entre positionZMin et positionZMax
+        float targetPositionZ = Mathf.Lerp(positionZMin, positionZMax, niveauEauActuel);
 
-        // applique le scale
+        // applique le scale sur Z uniquement
         transform.localScale = new Vector3(
-            transform.localScale.x,
-            targetScaleY,
-            transform.localScale.z
+            scaleInitial.x,
+            scaleInitial.y,
+            targetScale
         );
 
-        // applique le décalage Y pour compenser
+        // applique la position Z interpolée
         transform.localPosition = new Vector3(
             positionInitiale.x,
-            positionInitiale.y + decalageY,
-            positionInitiale.z
+            positionInitiale.y,
+            targetPositionZ
         );
     }
 
