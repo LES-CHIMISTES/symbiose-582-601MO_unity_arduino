@@ -20,7 +20,7 @@ public class MeshEauController : MonoBehaviour
     public Color couleurDefaut = new Color(0.3f, 0.6f, 1f);
 
     private Renderer meshRenderer;
-    private Material meshMaterial;
+    public Material meshMaterial;
     private float niveauEauActuel = 0f; // eau accumulée (0 à 1)
     private Vector3 scaleInitial; // scale de départ (pour X et Y)
     private Vector3 positionInitiale; // position de départ du mesh

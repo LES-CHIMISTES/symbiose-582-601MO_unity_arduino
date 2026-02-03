@@ -11,6 +11,7 @@ public class OSCInputManager : MonoBehaviour
     public MeshFeuController meshFeuController;
     public BecherController becherController;
     public EventGel eventGel;
+    public GameStateManager gameStateManager;
 
     // Variables pour stocker les valeurs OSC
     private float accelX, accelY, accelZ;
@@ -99,26 +100,36 @@ public class OSCInputManager : MonoBehaviour
     {
         int value = (int)message.Values[0].FloatValue;
 
-        // rotation z
         if (becherController != null)
         {
             becherController.UpdateRotationZ(value);
         }
 
-        //Debug.Log("FADER X = " + value);
+        // detect interaction pour GameStateManager
+        if (gameStateManager != null)
+        {
+            gameStateManager.DetecterInteraction();
+        }
+
+        // Debug.Log("FADER X = " + value);
     }
 
     void FaderY(OSCMessage message)
     {
         int value = (int)message.Values[0].FloatValue;
 
-        // rotation y
         if (becherController != null)
         {
             becherController.UpdateRotationY(value);
         }
 
-        //Debug.Log("FADER Y = " + value);
+        // detect interaction pour GameStateManager
+        if (gameStateManager != null)
+        {
+            gameStateManager.DetecterInteraction();
+        }
+
+        // Debug.Log("FADER Y = " + value);
     }
 
     void Key1(OSCMessage message)
