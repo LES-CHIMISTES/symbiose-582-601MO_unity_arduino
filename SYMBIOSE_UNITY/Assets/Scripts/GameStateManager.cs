@@ -108,6 +108,12 @@ public class GameStateManager : MonoBehaviour
         Debug.Log("GAME : Événement résolu ! Affichage VICTOIRE");
         partieTerminee = true;
 
+        // son victoire
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerVictoire();
+        }
+
         // show txt victoire
         if (textVictoire != null)
         {
@@ -124,13 +130,19 @@ public class GameStateManager : MonoBehaviour
         Debug.Log("GAME : Événement échoué ! Affichage ÉCHEC");
         partieTerminee = true;
 
-        // show txt echec
+        // son echec
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEchec();
+        }
+
+        // show texte echec
         if (textEchec != null)
         {
             textEchec.gameObject.SetActive(true);
         }
 
-        // desactive le mesh de la potion
+        // desactive mesh potion
         if (meshEau != null)
         {
             meshEau.SetActive(false);

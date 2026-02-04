@@ -24,6 +24,9 @@ public class MeshEauController : MonoBehaviour
     private float niveauEauActuel = 0f; // eau accumulée (0 à 1)
     private Vector3 scaleInitial; // scale de départ (pour X et Y)
     private Vector3 positionInitiale; // position de départ du mesh
+    private float derniereScaleZ = 0f; // détecter augmentation
+    public float dernierSonEau = 0f; // temps du dernier son
+    public float cooldownSonEau = 0.3f; // cooldown entre chaque son
 
     void Start()
     {
@@ -57,7 +60,7 @@ public class MeshEauController : MonoBehaviour
     {
         // évaporation constante
         niveauEauActuel -= vitesseEvaporation * Time.deltaTime;
-        niveauEauActuel = Mathf.Clamp01(niveauEauActuel); // reste entre 0 et 1
+        niveauEauActuel = Mathf.Clamp01(niveauEauActuel);
 
         // scale selon état niveau eau
         float targetScale = Mathf.Lerp(scaleMin, scaleMax, niveauEauActuel);
@@ -91,6 +94,17 @@ public class MeshEauController : MonoBehaviour
             niveauEauActuel += augmentation;
             // clamp entre 0 et 1
             niveauEauActuel = Mathf.Clamp01(niveauEauActuel);
+
+            // joue son avec cooldown pour éviter spam
+            if (AudioManager.Instance != null)
+            {
+                // check si assez de temps s'est écoulé depuis le dernier son
+                if (Time.time - dernierSonEau >= cooldownSonEau)
+                {
+                    AudioManager.Instance.JouerEauVersee();
+                    dernierSonEau = Time.time; // update à jour le temps du dernier son
+                }
+            }
         }
     }
 

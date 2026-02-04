@@ -16,6 +16,9 @@ public class OSCInputManager : MonoBehaviour
     // Variables pour stocker les valeurs OSC
     private float accelX, accelY, accelZ;
     private int currentKey = 0; // 0 = aucune, 1 = key1, 2 = key2, 3 = key3
+    private int dernierFaderX = -1; // -1 = pas encore initialisé
+    private int dernierFaderY = -1;
+    private float seuilChangementFader = 75f; // changement minimum pour jouer le son
 
     void Start()
     {
@@ -93,45 +96,73 @@ public class OSCInputManager : MonoBehaviour
             eventGel.UpdatePotentiometre(value);
         }
 
-        Debug.Log("ANGLE = " + value);
+        //Debug.Log("ANGLE = " + value);
     }
 
     void FaderX(OSCMessage message)
     {
         int value = (int)message.Values[0].FloatValue;
 
-        // rotZ bécher
+        // update à jour la rotation Z du bécher
         if (becherController != null)
         {
             becherController.UpdateRotationZ(value);
         }
 
-        // détecte interaction avec seuil
+        // detect interaction pour GameStateManager
         if (gameStateManager != null)
         {
             gameStateManager.DetecterInteractionFaderX(value);
         }
 
-        // Debug.Log("FADER X = " + value);
+        // joue son seulement si changement significatif
+        if (dernierFaderX != -1) // if pas la première lecture
+        {
+            int changement = Mathf.Abs(value - dernierFaderX);
+            if (changement >= seuilChangementFader)
+            {
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.JouerBrassage();
+                }
+            }
+        }
+        dernierFaderX = value;
+
+        //Debug.Log("FADER X = " + value);
     }
 
     void FaderY(OSCMessage message)
     {
         int value = (int)message.Values[0].FloatValue;
 
-        // rotY du bécher
+        // update à jour la rotation Y du bécher
         if (becherController != null)
         {
             becherController.UpdateRotationY(value);
         }
 
-        // détecter interaction avec seuil
+        // detect interaction pour GameStateManager
         if (gameStateManager != null)
         {
             gameStateManager.DetecterInteractionFaderY(value);
         }
 
-        // Debug.Log("FADER Y = " + value);
+        // joue son seulement si changement significatif
+        if (dernierFaderY != -1) // if pas la première lecture
+        {
+            int changement = Mathf.Abs(value - dernierFaderY);
+            if (changement >= seuilChangementFader)
+            {
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.JouerBrassage();
+                }
+            }
+        }
+        dernierFaderY = value;
+
+        //Debug.Log("FADER Y = " + value);
     }
 
     void Key1(OSCMessage message)
@@ -144,6 +175,11 @@ public class OSCInputManager : MonoBehaviour
             if (meshEauController != null)
             {
                 meshEauController.SetCouleur(1); // (vert)
+            }
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.JouerKeyPress();
             }
         }
         else if (currentKey == 1)
@@ -169,6 +205,11 @@ public class OSCInputManager : MonoBehaviour
             {
                 meshEauController.SetCouleur(2); // (bleu)
             }
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.JouerKeyPress();
+            }
         }
         else if (currentKey == 2)
         {
@@ -192,6 +233,11 @@ public class OSCInputManager : MonoBehaviour
             if (meshEauController != null)
             {
                 meshEauController.SetCouleur(3); // (mauve)
+            }
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.JouerKeyPress();
             }
         }
         else if (currentKey == 3)
