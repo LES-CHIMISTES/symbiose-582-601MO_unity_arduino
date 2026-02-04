@@ -93,7 +93,7 @@ public class OSCInputManager : MonoBehaviour
             eventGel.UpdatePotentiometre(value);
         }
 
-        //Debug.Log("ANGLE = " + value);
+        Debug.Log("ANGLE = " + value);
     }
 
     void FaderX(OSCMessage message)
