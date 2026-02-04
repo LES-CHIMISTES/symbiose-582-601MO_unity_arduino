@@ -2,15 +2,17 @@ using UnityEngine;
 
 public class GameStateManager : MonoBehaviour
 {
-    [Header("Événements")]
     public GameObject eventGel;
 
-    [Header("Paramètres Maquette #1")]
     public float delaiAvantEvenement = 5f; // temps avant de déclencher évé gel
+    public float seuilMouvementFader = 300f; // seuil minimum pour détecter interaction
 
     private bool evenementDemarre = false;
     private bool interactionDetectee = false;
     private float chronoInteraction = 0f;
+
+    private int derniereFaderX = -1; // -1 = pas encore init
+    private int derniereFaderY = -1;
 
     void Update()
     {
@@ -31,7 +33,47 @@ public class GameStateManager : MonoBehaviour
     }
 
     // OSCInputManager
-    public void DetecterInteraction()
+    public void DetecterInteractionFaderX(int valeur)
+    {
+        // if first lecture, juste sauvegarder
+        if (derniereFaderX == -1)
+        {
+            derniereFaderX = valeur;
+            return;
+        }
+
+        // calc le changement
+        int changement = Mathf.Abs(valeur - derniereFaderX);
+
+        // si au dessus de seuil
+        if (changement >= seuilMouvementFader)
+        {
+            MarquerInteraction();
+        }
+
+        // update last value qui est stock
+        derniereFaderX = valeur;
+    }
+
+    public void DetecterInteractionFaderY(int valeur)
+    {
+        if (derniereFaderY == -1)
+        {
+            derniereFaderY = valeur;
+            return;
+        }
+
+        int changement = Mathf.Abs(valeur - derniereFaderY);
+
+        if (changement >= seuilMouvementFader)
+        {
+            MarquerInteraction();
+        }
+
+        derniereFaderY = valeur;
+    }
+
+    void MarquerInteraction()
     {
         if (!interactionDetectee)
         {

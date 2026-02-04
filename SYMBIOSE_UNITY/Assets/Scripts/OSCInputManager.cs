@@ -100,15 +100,16 @@ public class OSCInputManager : MonoBehaviour
     {
         int value = (int)message.Values[0].FloatValue;
 
+        // rotZ bécher
         if (becherController != null)
         {
             becherController.UpdateRotationZ(value);
         }
 
-        // detect interaction pour GameStateManager
+        // détecte interaction avec seuil
         if (gameStateManager != null)
         {
-            gameStateManager.DetecterInteraction();
+            gameStateManager.DetecterInteractionFaderX(value);
         }
 
         // Debug.Log("FADER X = " + value);
@@ -118,15 +119,16 @@ public class OSCInputManager : MonoBehaviour
     {
         int value = (int)message.Values[0].FloatValue;
 
+        // rotY du bécher
         if (becherController != null)
         {
             becherController.UpdateRotationY(value);
         }
 
-        // detect interaction pour GameStateManager
+        // détecter interaction avec seuil
         if (gameStateManager != null)
         {
-            gameStateManager.DetecterInteraction();
+            gameStateManager.DetecterInteractionFaderY(value);
         }
 
         // Debug.Log("FADER Y = " + value);
