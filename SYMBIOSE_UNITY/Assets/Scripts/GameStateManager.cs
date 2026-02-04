@@ -1,11 +1,17 @@
 using UnityEngine;
+using TMPro;
 
 public class GameStateManager : MonoBehaviour
 {
     public GameObject eventGel;
 
+    public GameObject textVictoire;
+    public GameObject textEchec;
+    public GameObject meshEau; // sera desac qd échec
+
     public float delaiAvantEvenement = 5f; // temps avant de déclencher évé gel
     public float seuilMouvementFader = 300f; // seuil minimum pour détecter interaction
+    public float delaiAvantReset = 10f; // temps avant reset qd victoire/echec
 
     private bool evenementDemarre = false;
     private bool interactionDetectee = false;
@@ -14,10 +20,13 @@ public class GameStateManager : MonoBehaviour
     private int derniereFaderX = -1; // -1 = pas encore init
     private int derniereFaderY = -1;
 
+    private bool partieTerminee = false; // state fin
+
     void Update()
     {
-        // si événement starté, rien faire
-        if (evenementDemarre) return;
+        if (partieTerminee) return; // si partie est terminée, rien faire
+
+        if (evenementDemarre) return; // si événement starté, rien faire
 
         // si intéraction détectée, count temps
         if (interactionDetectee)
@@ -91,6 +100,100 @@ public class GameStateManager : MonoBehaviour
         if (eventGel != null)
         {
             eventGel.SetActive(true);
+        }
+    }
+
+    public void EvenementResolu()
+    {
+        Debug.Log("GAME : Événement résolu ! Affichage VICTOIRE");
+        partieTerminee = true;
+
+        // show txt victoire
+        if (textVictoire != null)
+        {
+            textVictoire.gameObject.SetActive(true);
+        }
+
+        // reset après délai
+        Invoke("ResetPartie", delaiAvantReset);
+    }
+
+    // qd évé échoue
+    public void EvenementEchoue()
+    {
+        Debug.Log("GAME : Événement échoué ! Affichage ÉCHEC");
+        partieTerminee = true;
+
+        // show txt echec
+        if (textEchec != null)
+        {
+            textEchec.gameObject.SetActive(true);
+        }
+
+        // desactive le mesh de la potion
+        if (meshEau != null)
+        {
+            meshEau.SetActive(false);
+        }
+
+        // reset apres delai
+        Invoke("ResetPartie", delaiAvantReset);
+    }
+
+    // reset tout pour nouvelle partie
+    void ResetPartie()
+    {
+        Debug.Log("GAME : Réinitialisation de la partie...");
+
+        // hide les textes
+        if (textVictoire != null)
+        {
+            textVictoire.gameObject.SetActive(false);
+        }
+        if (textEchec != null)
+        {
+            textEchec.gameObject.SetActive(false);
+        }
+
+        // reactive potion si était désactivée
+        if (meshEau != null)
+        {
+            // désactive puis réactive pour forcer un reset
+            meshEau.SetActive(false);
+
+            // invoke après un frame
+            Invoke("ReactiverMeshEau", 0.1f);
+        }
+
+        // desactive EventGel si encore actif
+        if (eventGel != null)
+        {
+            eventGel.SetActive(false);
+        }
+
+        // reset les états
+        evenementDemarre = false;
+        interactionDetectee = false;
+        partieTerminee = false;
+        chronoInteraction = 0f;
+        derniereFaderX = -1;
+        derniereFaderY = -1;
+
+        Debug.Log("GAME : Prêt pour une nouvelle partie !");
+    }
+
+    void ReactiverMeshEau()
+    {
+        if (meshEau != null)
+        {
+            meshEau.SetActive(true);
+
+            // vide l'eau
+            MeshEauController eauController = meshEau.GetComponent<MeshEauController>();
+            if (eauController != null)
+            {
+                eauController.ViderEau();
+            }
         }
     }
 }
