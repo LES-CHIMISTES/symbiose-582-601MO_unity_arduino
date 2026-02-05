@@ -17,12 +17,14 @@ public class AudioManager : MonoBehaviour
     public AudioClip sonBruleurAllumage; // Quand angle passe de 0 à >0
     public AudioClip sonBruleurConstant; // Loop tant que angle >0
     public AudioClip sonTheiere; // Quand angle >3500
+    public AudioClip sonFrosting; // évé gel démarre
 
     [Header("Audio Sources")]
     private AudioSource sourceUI; // Pour sons UI (victoire/échec)
     private AudioSource sourceInteractions; // Pour sons interactions
     private AudioSource sourceBruleurLoop; // Pour le son constant du brûleur
     private AudioSource sourceBruleurEffets; // Pour allumage/théière
+    private AudioSource sourceBruleurAllumage; // allumage
 
     void Awake()
     {
@@ -42,6 +44,7 @@ public class AudioManager : MonoBehaviour
         sourceInteractions = gameObject.AddComponent<AudioSource>();
         sourceBruleurLoop = gameObject.AddComponent<AudioSource>();
         sourceBruleurEffets = gameObject.AddComponent<AudioSource>();
+        sourceBruleurAllumage = gameObject.AddComponent<AudioSource>();
 
         // config le loop du brûleur
         sourceBruleurLoop.loop = true;
@@ -128,7 +131,7 @@ public class AudioManager : MonoBehaviour
     {
         if (sonBruleurAllumage != null)
         {
-            sourceBruleurEffets.PlayOneShot(sonBruleurAllumage);
+            sourceBruleurAllumage.PlayOneShot(sonBruleurAllumage);
             Debug.Log("AUDIO : Brûleur s'allume");
         }
     }
@@ -158,6 +161,15 @@ public class AudioManager : MonoBehaviour
         {
             sourceBruleurEffets.PlayOneShot(sonTheiere);
             Debug.Log("AUDIO : Théière siffle");
+        }
+    }
+
+    public void JouerFrosting()
+    {
+        if (sonFrosting != null)
+        {
+            sourceUI.PlayOneShot(sonFrosting);
+            Debug.Log("AUDIO : Frosting (gel)");
         }
     }
 }

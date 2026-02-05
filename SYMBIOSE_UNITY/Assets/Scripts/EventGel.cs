@@ -25,6 +25,9 @@ public class EventGel : MonoBehaviour
     public GameObject[] meshsGel; // mesh à activer
     public Image vignetteGel; // img UI de vignette
     public Color couleurGel = new Color(0.7f, 0.9f, 1f); // bleutée/blanchatre
+    public float dureeAnimationVignette = 1.5f; // durée animation vignette
+    public GameObject textAlertGel; // texte
+    public float dureeAffichageAlert = 2f; // affiche texte 2s
 
     // states
     private enum PhaseGel { Phase1_AtteindreLaMax, Phase2_PatternRythmique, Resolu, Echec }
@@ -68,11 +71,31 @@ public class EventGel : MonoBehaviour
             patternRythmique.SetActive(false);
         }
 
+        // afficher texte
+        if (textAlertGel != null)
+        {
+            textAlertGel.SetActive(true);
+            Invoke("CacherTextAlert", dureeAffichageAlert);
+        }
+
         ActiverEffetsVisuelsGel();
     }
 
+    void CacherTextAlert()
+    {
+        if (textAlertGel != null)
+        {
+            textAlertGel.SetActive(false);
+        }
+    }
     void ActiverEffetsVisuelsGel()
     {
+        // AJOUT : jouer son frosting
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerFrosting();
+        }
+
         // change couleur potion
         if (potionRenderer != null)
         {
@@ -91,15 +114,14 @@ public class EventGel : MonoBehaviour
             }
         }
 
-        // show vignette
+        // show vignette avec animation
         if (vignetteGel != null)
         {
-            vignetteGel.gameObject.SetActive(true);
-            Color couleurVignette = vignetteGel.color;
-            couleurVignette.a = 0.2f; // alpha 50
-            vignetteGel.color = couleurVignette;
+            StartCoroutine(AnimerVignette());
         }
     }
+
+
 
     void Update()
     {
@@ -202,16 +224,22 @@ public class EventGel : MonoBehaviour
     {
         Debug.Log("EVENT GEL : Étape " + etapePatternActuelle + " validée !");
 
-        // mettre l'image à 50% d'opacité
+        // mettre l'image à 50% d'opacité + scale réduit
         if (imagesPattern != null && etapePatternActuelle < imagesPattern.Length)
         {
-            Color couleur = imagesPattern[etapePatternActuelle].color;
-            couleur.a = 0.5f;
-            imagesPattern[etapePatternActuelle].color = couleur;
+            Image img = imagesPattern[etapePatternActuelle];
+
+            // alpha
+            Color couleur = img.color;
+            couleur.a = 0.3f;
+            img.color = couleur;
+
+            // AJOUT : scale réduit
+            img.transform.localScale = Vector3.one * 0.7f; // 70% de la taille
         }
 
-        // diminue encore froid
-        niveauFroid -= vitesseRechauffement * 2f;
+        // MODIFIÉ : diminue encore plus le froid pour atteindre ~10% à la fin
+        niveauFroid -= vitesseRechauffement * 5f; // CHANGÉ : *5f au lieu de *2f
         niveauFroid = Mathf.Max(0f, niveauFroid);
 
         // passe à l'étape suivante
@@ -221,7 +249,7 @@ public class EventGel : MonoBehaviour
         // check si toutes les 4 étapes sont complétées
         if (etapePatternActuelle >= valeursCiblesPattern.Length)
         {
-            // 4ème étape validée = VICTOIRE automatique !
+            // 4ème étape validée = victoire automatique
             ResoudreEvenement();
         }
     }
@@ -237,6 +265,8 @@ public class EventGel : MonoBehaviour
                 Color couleur = img.color;
                 couleur.a = 1f; // opaque
                 img.color = couleur;
+
+                img.transform.localScale = Vector3.one; // taille normale
             }
         }
     }
@@ -286,6 +316,42 @@ public class EventGel : MonoBehaviour
         }
     }
 
+    // anime la vignette scale out + fade in
+    System.Collections.IEnumerator AnimerVignette()
+    {
+        if (vignetteGel == null) yield break;
+
+        vignetteGel.gameObject.SetActive(true);
+
+        // state initial
+        Color couleur = vignetteGel.color;
+        couleur.a = 0f;
+        vignetteGel.color = couleur;
+        vignetteGel.transform.localScale = Vector3.one * 2f; // start à 2x la taille
+
+        float tempsEcoule = 0f;
+
+        while (tempsEcoule < dureeAnimationVignette)
+        {
+            tempsEcoule += Time.deltaTime;
+            float progression = tempsEcoule / dureeAnimationVignette;
+
+            // lerp alpha de 0 à 0.2
+            couleur.a = Mathf.Lerp(0f, 0.2f, progression);
+            vignetteGel.color = couleur;
+
+            // lerp scale de 2 à 1 (scale in)
+            float scale = Mathf.Lerp(2f, 1f, progression);
+            vignetteGel.transform.localScale = Vector3.one * scale;
+
+            yield return null;
+        }
+
+        // assurer les valeurs finales
+        couleur.a = 0.2f;
+        vignetteGel.color = couleur;
+        vignetteGel.transform.localScale = Vector3.one;
+    }
     void DesactiverEffetsVisuelsGel()
     {
         // couleur normale potion
@@ -311,6 +377,11 @@ public class EventGel : MonoBehaviour
         if (vignetteGel != null)
         {
             vignetteGel.gameObject.SetActive(false);
+        }
+
+        if (textAlertGel != null)
+        {
+            textAlertGel.SetActive(false);
         }
     }
     void DesactiverEvenement()
