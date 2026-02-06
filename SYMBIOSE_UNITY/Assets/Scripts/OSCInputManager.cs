@@ -20,6 +20,12 @@ public class OSCInputManager : MonoBehaviour
     private int dernierFaderY = -1;
     private float seuilChangementFader = 75f; // changement minimum pour jouer le son
 
+    [Header("Feedback Stations")]
+    public StationEauFeedback stationEauFeedback;
+    public StationFeuFeedback stationFeuFeedback;
+    public StationPoudresFeedback stationPoudresFeedback;
+    public StationTourbillonFeedback stationTourbillonFeedback;
+
     void Start()
     {
         oscReceiver.Bind("/accelX", AccelX);
@@ -44,6 +50,12 @@ public class OSCInputManager : MonoBehaviour
         if (meshEauController != null)
         {
             meshEauController.UpdateAccel(value);
+        }
+
+        if (stationEauFeedback != null)
+        {
+            float niveau = meshEauController.GetNiveauEau();
+            stationEauFeedback.UpdateNiveauEau(niveau);
         }
 
         //Debug.Log("ACCEL X = " + value);
@@ -90,6 +102,12 @@ public class OSCInputManager : MonoBehaviour
         {
             meshFeuController.UpdateScale(value);
         }
+
+        if (stationFeuFeedback != null)
+        {
+            stationFeuFeedback.UpdateAngleKnob(value);
+        }
+
         // event gel
         if (eventGel != null && eventGel.gameObject.activeSelf)
         {
@@ -113,6 +131,12 @@ public class OSCInputManager : MonoBehaviour
         if (gameStateManager != null)
         {
             gameStateManager.DetecterInteractionFaderX(value);
+        }
+
+        if (stationTourbillonFeedback != null)
+        {
+            int faderY = dernierFaderY != -1 ? dernierFaderY : 2048;
+            stationTourbillonFeedback.UpdateJoystick(value, faderY);
         }
 
         // joue son seulement si changement significatif
@@ -148,6 +172,12 @@ public class OSCInputManager : MonoBehaviour
             gameStateManager.DetecterInteractionFaderY(value);
         }
 
+        if (stationTourbillonFeedback != null)
+        {
+            int faderX = dernierFaderX != -1 ? dernierFaderX : 2048;
+            stationTourbillonFeedback.UpdateJoystick(faderX, value);
+        }
+
         // joue son seulement si changement significatif
         if (dernierFaderY != -1) // if pas la première lecture
         {
@@ -181,6 +211,11 @@ public class OSCInputManager : MonoBehaviour
             {
                 AudioManager.Instance.JouerKeyPress();
             }
+
+            if (stationPoudresFeedback != null)
+            {
+                stationPoudresFeedback.AppuyerBouton(1);
+            }
         }
         else if (currentKey == 1)
         {
@@ -210,6 +245,11 @@ public class OSCInputManager : MonoBehaviour
             {
                 AudioManager.Instance.JouerKeyPress();
             }
+
+            if (stationPoudresFeedback != null)
+            {
+                stationPoudresFeedback.AppuyerBouton(1);
+            }
         }
         else if (currentKey == 2)
         {
@@ -238,6 +278,11 @@ public class OSCInputManager : MonoBehaviour
             if (AudioManager.Instance != null)
             {
                 AudioManager.Instance.JouerKeyPress();
+            }
+
+            if (stationPoudresFeedback != null)
+            {
+                stationPoudresFeedback.AppuyerBouton(1);
             }
         }
         else if (currentKey == 3)
