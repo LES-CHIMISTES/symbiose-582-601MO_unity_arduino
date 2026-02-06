@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using extOSC;
 
 public class EventGel : MonoBehaviour
 {
@@ -7,6 +8,7 @@ public class EventGel : MonoBehaviour
     public GameObject patternRythmique; // parent img
     public Image[] imagesPattern; // 4 images cercles
     public GameStateManager gameStateManager;
+    public OSCTransmitter oscTransmitter;
 
     public MeshEauController meshEau;
 
@@ -90,11 +92,13 @@ public class EventGel : MonoBehaviour
     }
     void ActiverEffetsVisuelsGel()
     {
-        // AJOUT : jouer son frosting
+        // jouer son frosting
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.JouerFrosting();
         }
+
+        EnvoyerOSCLumiere(true);
 
         // change couleur potion
         if (potionRenderer != null)
@@ -361,6 +365,8 @@ public class EventGel : MonoBehaviour
             potionRenderer.material.color = meshEau.meshMaterial.color;
         }
 
+        EnvoyerOSCLumiere(false);
+
         // hide mesh gel
         if (meshsGel != null)
         {
@@ -382,6 +388,30 @@ public class EventGel : MonoBehaviour
         if (textAlertGel != null)
         {
             textAlertGel.SetActive(false);
+        }
+    }
+
+    void EnvoyerOSCLumiere(bool allumer)
+    {
+        if (oscTransmitter == null) return;
+
+        if (allumer)
+        {
+            // allumer la lumière en bleu cyan (effet gel)
+            var messageAllumer = new OSCMessage("/lumiere/gel");
+            messageAllumer.AddValue(OSCValue.Int(1)); // 1 = allumer
+            oscTransmitter.Send(messageAllumer);
+
+            Debug.Log("OSC : Lumière gel ALLUMÉE");
+        }
+        else
+        {
+            // éteindre la lumière
+            var messageEteindre = new OSCMessage("/lumiere/gel");
+            messageEteindre.AddValue(OSCValue.Int(0)); // 0 = éteindre
+            oscTransmitter.Send(messageEteindre);
+
+            Debug.Log("OSC : Lumière gel ÉTEINTE");
         }
     }
     void DesactiverEvenement()
