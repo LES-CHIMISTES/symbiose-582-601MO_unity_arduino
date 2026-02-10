@@ -6,7 +6,7 @@ public class OSCInputManager : MonoBehaviour
     [Header("OSC")]
     public OSCReceiver oscReceiver;
 
-    [Header("Contrôleurs")]
+    [Header("Contrï¿½leurs")]
     public MeshEauController meshEauController;
     public MeshFeuController meshFeuController;
     public BecherController becherController;
@@ -16,7 +16,7 @@ public class OSCInputManager : MonoBehaviour
     // Variables pour stocker les valeurs OSC
     private float accelX, accelY, accelZ;
     private int currentKey = 0; // 0 = aucune, 1 = key1, 2 = key2, 3 = key3
-    private int dernierFaderX = -1; // -1 = pas encore initialisé
+    private int dernierFaderX = -1; // -1 = pas encore initialisï¿½
     private int dernierFaderY = -1;
     private float seuilChangementFader = 75f; // changement minimum pour jouer le son
 
@@ -121,16 +121,10 @@ public class OSCInputManager : MonoBehaviour
     {
         int value = (int)message.Values[0].FloatValue;
 
-        // update à jour la rotation Z du bécher
+        // update ï¿½ jour la rotation Z du bï¿½cher
         if (becherController != null)
         {
             becherController.UpdateRotationZ(value);
-        }
-
-        // detect interaction pour GameStateManager
-        if (gameStateManager != null)
-        {
-            gameStateManager.DetecterInteractionFaderX(value);
         }
 
         if (stationTourbillonFeedback != null)
@@ -140,7 +134,7 @@ public class OSCInputManager : MonoBehaviour
         }
 
         // joue son seulement si changement significatif
-        if (dernierFaderX != -1) // if pas la première lecture
+        if (dernierFaderX != -1) // if pas la premiï¿½re lecture
         {
             int changement = Mathf.Abs(value - dernierFaderX);
             if (changement >= seuilChangementFader)
@@ -160,16 +154,10 @@ public class OSCInputManager : MonoBehaviour
     {
         int value = (int)message.Values[0].FloatValue;
 
-        // update à jour la rotation Y du bécher
+        // update ï¿½ jour la rotation Y du bï¿½cher
         if (becherController != null)
         {
             becherController.UpdateRotationY(value);
-        }
-
-        // detect interaction pour GameStateManager
-        if (gameStateManager != null)
-        {
-            gameStateManager.DetecterInteractionFaderY(value);
         }
 
         if (stationTourbillonFeedback != null)
@@ -179,7 +167,7 @@ public class OSCInputManager : MonoBehaviour
         }
 
         // joue son seulement si changement significatif
-        if (dernierFaderY != -1) // if pas la première lecture
+        if (dernierFaderY != -1) // if pas la premiï¿½re lecture
         {
             int changement = Mathf.Abs(value - dernierFaderY);
             if (changement >= seuilChangementFader)
@@ -196,104 +184,74 @@ public class OSCInputManager : MonoBehaviour
     }
 
     void Key1(OSCMessage message)
+{
+    int value = message.Values[0].IntValue;
+
+    if (value == 1)
     {
-        int value = message.Values[0].IntValue;
-
-        if (value == 1)
+        if (meshEauController != null)
         {
-            currentKey = 1;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(1); // (vert)
-            }
-
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.JouerKeyPress();
-            }
-
-            if (stationPoudresFeedback != null)
-            {
-                stationPoudresFeedback.AppuyerBouton(1);
-            }
+            meshEauController.SetCouleur(1);
         }
-        else if (currentKey == 1)
+        
+        
+        if (stationPoudresFeedback != null)
         {
-            currentKey = 0;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(0); // couelur par défaut
-            }
+            stationPoudresFeedback.AppuyerBouton(1); 
         }
-
-        //Debug.Log("KEY 1 = " + value);
+        
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerKeyPress();
+        }
     }
+}
 
-    void Key2(OSCMessage message)
+void Key2(OSCMessage message)
+{
+    int value = message.Values[0].IntValue;
+
+    if (value == 1)
     {
-        int value = message.Values[0].IntValue;
-
-        if (value == 1)
+        if (meshEauController != null)
         {
-            currentKey = 2;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(2); // (bleu)
-            }
-
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.JouerKeyPress();
-            }
-
-            if (stationPoudresFeedback != null)
-            {
-                stationPoudresFeedback.AppuyerBouton(1);
-            }
+            meshEauController.SetCouleur(2);
         }
-        else if (currentKey == 2)
+        
+        
+        if (stationPoudresFeedback != null)
         {
-            currentKey = 0;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(0); // couelur par défaut
-            }
+            stationPoudresFeedback.AppuyerBouton(2);
         }
-
-        //Debug.Log("KEY 2 = " + value);
+        
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerKeyPress();
+        }
     }
+}
 
-    void Key3(OSCMessage message)
+void Key3(OSCMessage message)
+{
+    int value = message.Values[0].IntValue;
+
+    if (value == 1)
     {
-        int value = message.Values[0].IntValue;
-
-        if (value == 1)
+        if (meshEauController != null)
         {
-            currentKey = 3;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(3); // (mauve)
-            }
-
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.JouerKeyPress();
-            }
-
-            if (stationPoudresFeedback != null)
-            {
-                stationPoudresFeedback.AppuyerBouton(1);
-            }
+            meshEauController.SetCouleur(3);
         }
-        else if (currentKey == 3)
+        
+        
+        if (stationPoudresFeedback != null)
         {
-            currentKey = 0;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(0); // couelur par défaut
-            }
+            stationPoudresFeedback.AppuyerBouton(3);
         }
-
-        //Debug.Log("KEY 3 = " + value);
+        
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerKeyPress();
+        }
     }
+}
 }

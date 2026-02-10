@@ -6,43 +6,79 @@ public class StationFeuFeedback : MonoBehaviour
     [Header("ui")]
     public RectTransform knobDynamique; // knob qui suit angle
     public RectTransform knobCible; // knob transparent avec indicateur rouge
+    public RectTransform barreTemps; // barre horizontale qui scale (RectTransform, pas Image)
 
     [Header("params")]
     public float angleCibleMin = -180f;
     public float angleCibleMax = 180f;
-    public float tolerance = 15f; // marge d'erreur (degrés)
-    public float tempsAvantChangement = 2f; // temps avant nouvelle cible
+    public float tolerance = 20f; // marge d'erreur (degrÃ©s)
+    public float tempsAvantChangement = 3f; // temps avant nouvelle cible
 
     private float angleCibleActuel = 0f; // angle cible actuel
     private float angleKnobActuel = 0f; // angle knob actuel (de l'osc)
     private float chronoChangement = 0f;
     private bool enEquilibre = false;
+    private Vector3 scaleInitialBarre; // scale initial de la barre
 
     void Start()
     {
         // angle cible initial
         angleCibleActuel = Random.Range(angleCibleMin, angleCibleMax);
         UpdateKnobCibleRotation();
+        
+        // save scale initial barre
+        if (barreTemps != null)
+        {
+            scaleInitialBarre = barreTemps.localScale;
+            // cacher barre au dÃ©part
+            barreTemps.gameObject.SetActive(false);
+        }
     }
 
     void Update()
     {
-        // check si knob est aligné avec cible
+        // check si knob est alignÃ© avec cible
         float difference = Mathf.Abs(Mathf.DeltaAngle(angleKnobActuel, angleCibleActuel));
-
+        
         if (difference <= tolerance)
         {
-            // en équilibre
+            // en Ã©quilibre
             if (!enEquilibre)
             {
                 enEquilibre = true;
                 chronoChangement = 0f;
+                
+                // afficher barre
+                if (barreTemps != null)
+                {
+                    barreTemps.gameObject.SetActive(true);
+                }
             }
 
-            // compter temps en équilibre
+            // compter temps en Ã©quilibre
             chronoChangement += Time.deltaTime;
 
-            // changer cible après temps écoulé
+            // update barre temps avec scale X
+            if (barreTemps != null)
+            {
+                float progression = chronoChangement / tempsAvantChangement;
+                
+                // scale x (de 1 Ã  0)
+                Vector3 nouveauScale = scaleInitialBarre;
+                nouveauScale.x = scaleInitialBarre.x * (1f - progression);
+                barreTemps.localScale = nouveauScale;
+                
+                // fade out alpha
+                Image barreImage = barreTemps.GetComponent<Image>();
+                if (barreImage != null)
+                {
+                    Color couleur = barreImage.color;
+                    couleur.a = 1f - progression;
+                    barreImage.color = couleur;
+                }
+            }
+
+            // changer cible aprÃ¨s temps Ã©coulÃ©
             if (chronoChangement >= tempsAvantChangement)
             {
                 DeplacerCible();
@@ -50,17 +86,36 @@ public class StationFeuFeedback : MonoBehaviour
         }
         else
         {
-            enEquilibre = false;
-            chronoChangement = 0f;
+            // plus en Ã©quilibre
+            if (enEquilibre)
+            {
+                enEquilibre = false;
+                chronoChangement = 0f;
+                
+                // cacher barre
+                if (barreTemps != null)
+                {
+                    barreTemps.gameObject.SetActive(false);
+                    // reset pour prochaine fois
+                    barreTemps.localScale = scaleInitialBarre;
+                    Image barreImage = barreTemps.GetComponent<Image>();
+                    if (barreImage != null)
+                    {
+                        Color couleur = barreImage.color;
+                        couleur.a = 1f;
+                        barreImage.color = couleur;
+                    }
+                }
+            }
         }
     }
 
-    // appelé par MeshFeuController ou OSCInputManager
+    // appelÃ© par DebugInputSimulator ou OSCInputManager
     public void UpdateAngleKnob(float valeurAngle)
     {
-        // convertir valeur osc (0-4096) en angle (-180 à 180)
-        // RAPPEL : ton angle est inversé (0 = max, 4096 = éteint)
-        float normalized = 1f - (valeurAngle / 4096f); // inverse
+        // convertir valeur osc (0-4096) en angle (-180 Ã  180)
+        // FLIPPÃ‰ : 0 = -180, 4096 = 180
+        float normalized = valeurAngle / 4096f; // 0 Ã  1
         angleKnobActuel = Mathf.Lerp(-180f, 180f, normalized);
 
         // update rotation du knob dynamique
@@ -72,11 +127,19 @@ public class StationFeuFeedback : MonoBehaviour
 
     void DeplacerCible()
     {
-        // nouvelle cible aléatoire
+        // nouvelle cible alÃ©atoire
         angleCibleActuel = Random.Range(angleCibleMin, angleCibleMax);
         UpdateKnobCibleRotation();
         chronoChangement = 0f;
-        Debug.Log("FEU : Nouvelle cible à " + angleCibleActuel + "°");
+        enEquilibre = false;
+        
+        // cacher barre
+        if (barreTemps != null)
+        {
+            barreTemps.gameObject.SetActive(false);
+        }
+        
+        Debug.Log("FEU : Nouvelle cible Ã  " + angleCibleActuel + "Â°");
     }
 
     void UpdateKnobCibleRotation()

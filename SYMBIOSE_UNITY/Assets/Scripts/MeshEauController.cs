@@ -2,12 +2,12 @@ using UnityEngine;
 
 public class MeshEauController : MonoBehaviour
 {
-    [Header("Paramètres de remplissage")]
+    [Header("Paramï¿½tres de remplissage")]
     public float scaleMin = 0f;
     public float scaleMax = 1f; // hauteur maximale du mesh
     public float seuilAgitation = 0.05f; // seuil
     public float vitesseRemplissage = 15f; // vitesse eau se remplit
-    public float vitesseEvaporation = 0.05f; // vitesse à laquelle l'eau s'évapore (diminue)
+    public float vitesseEvaporation = 0.05f; // vitesse ï¿½ laquelle l'eau s'ï¿½vapore (diminue)
 
     [Header("Position Z cible")]
     public float positionZMin = -0.00122f; // position Z quand scale = 0
@@ -21,10 +21,10 @@ public class MeshEauController : MonoBehaviour
 
     private Renderer meshRenderer;
     public Material meshMaterial;
-    private float niveauEauActuel = 0f; // eau accumulée (0 à 1)
-    private Vector3 scaleInitial; // scale de départ (pour X et Y)
-    private Vector3 positionInitiale; // position de départ du mesh
-    private float derniereScaleZ = 0f; // détecter augmentation
+    public float niveauEauActuel = 0f; // eau accumulï¿½e (0 ï¿½ 1)
+    private Vector3 scaleInitial; // scale de dï¿½part (pour X et Y)
+    private Vector3 positionInitiale; // position de dï¿½part du mesh
+    private float derniereScaleZ = 0f; // dï¿½tecter augmentation
     public float dernierSonEau = 0f; // temps du dernier son
     public float cooldownSonEau = 0.3f; // cooldown entre chaque son
 
@@ -41,14 +41,14 @@ public class MeshEauController : MonoBehaviour
         // save la position initiale
         positionInitiale = transform.localPosition;
 
-        // scale à 0/min
+        // scale ï¿½ 0/min
         transform.localScale = new Vector3(
             scaleInitial.x,
             scaleInitial.y,
             scaleMin
         );
 
-        // position à positionZMin au départ
+        // position ï¿½ positionZMin au dï¿½part
         transform.localPosition = new Vector3(
             positionInitiale.x,
             positionInitiale.y,
@@ -58,14 +58,14 @@ public class MeshEauController : MonoBehaviour
 
     void Update()
     {
-        // évaporation constante
+        // ï¿½vaporation constante
         niveauEauActuel -= vitesseEvaporation * Time.deltaTime;
         niveauEauActuel = Mathf.Clamp01(niveauEauActuel);
 
-        // scale selon état niveau eau
+        // scale selon ï¿½tat niveau eau
         float targetScale = Mathf.Lerp(scaleMin, scaleMax, niveauEauActuel);
 
-        // position Z interpolée entre positionZMin et positionZMax
+        // position Z interpolï¿½e entre positionZMin et positionZMax
         float targetPositionZ = Mathf.Lerp(positionZMin, positionZMax, niveauEauActuel);
 
         // applique le scale sur Z uniquement
@@ -75,7 +75,7 @@ public class MeshEauController : MonoBehaviour
             targetScale
         );
 
-        // applique la position Z interpolée
+        // applique la position Z interpolï¿½e
         transform.localPosition = new Vector3(
             positionInitiale.x,
             positionInitiale.y,
@@ -83,10 +83,10 @@ public class MeshEauController : MonoBehaviour
         );
     }
 
-    // OSCInputManager (détecte agitation)
+    // OSCInputManager (dï¿½tecte agitation)
     public void UpdateAccel(float valeurAccel)
     {
-        // dépasse seuil, remplissage
+        // dï¿½passe seuil, remplissage
         if (valeurAccel > seuilAgitation)
         {
             // augmente proportionnellement au mouvement
@@ -95,14 +95,14 @@ public class MeshEauController : MonoBehaviour
             // clamp entre 0 et 1
             niveauEauActuel = Mathf.Clamp01(niveauEauActuel);
 
-            // joue son avec cooldown pour éviter spam
+            // joue son avec cooldown pour ï¿½viter spam
             if (AudioManager.Instance != null)
             {
-                // check si assez de temps s'est écoulé depuis le dernier son
+                // check si assez de temps s'est ï¿½coulï¿½ depuis le dernier son
                 if (Time.time - dernierSonEau >= cooldownSonEau)
                 {
                     AudioManager.Instance.JouerEauVersee();
-                    dernierSonEau = Time.time; // update à jour le temps du dernier son
+                    dernierSonEau = Time.time; // update ï¿½ jour le temps du dernier son
                 }
             }
         }
@@ -128,15 +128,15 @@ public class MeshEauController : MonoBehaviour
         }
     }
 
-    // méthode debug/pour plus tard
+    // mï¿½thode debug/pour plus tard
     public void ViderEau()
     {
         niveauEauActuel = 0f;
     }
 
-    // méthode debug/pour plus tard
-    public float GetNiveauEau()
-    {
-        return niveauEauActuel;
-    }
+    // mï¿½thode debug/pour plus tard
+public float GetNiveauEau()
+{
+    return Mathf.Clamp01(niveauEauActuel);
+}
 }

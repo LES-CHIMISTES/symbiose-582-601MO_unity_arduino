@@ -4,89 +4,143 @@ using UnityEngine.UI;
 public class StationTourbillonFeedback : MonoBehaviour
 {
     [Header("ui")]
-    public RectTransform flecheDirection; // fl�che qui indique direction
+    public RectTransform flecheDirection; // flèche qui indique sens rotation souhaité
+    public Image grandCercle; // cercle extérieur (zone)
+    public RectTransform petitCercle; // cercle intérieur (position joystick)
 
     [Header("params")]
-    public float tolerance = 30f; // marge d'erreur (degr�s)
-    public float tempsAvantChangement = 2f; // temps avant nouvelle direction
+    public float rayonGrandCercle = 50f; // rayon du grand cercle
+    public float tempsAvantChangement = 2f; // temps en rotation correcte avant changement
+    public float seuilRotation = 10f; // seuil de rotation en degrés pour détecter mouvement
 
-    private float directionCibleActuelle = 0f; // angle cible (0 = haut, 90 = droite, etc.)
-    private float directionJoystickActuelle = 0f; // angle joystick actuel
+    private enum SensRotation { Horaire, AntiHoraire }
+    private SensRotation sensActuel = SensRotation.Horaire;
+    private float angleJoystickPrecedent = 0f;
+    private float angleJoystickActuel = 0f;
     private float chronoChangement = 0f;
-    private bool enEquilibre = false;
+    private float accumulateurRotation = 0f; // accumule les petites rotations
 
     void Start()
     {
-        // direction initiale
-        directionCibleActuelle = Random.Range(0f, 360f);
-        UpdateFlecheRotation();
+        // sens initial aléatoire
+        sensActuel = Random.Range(0, 2) == 0 ? SensRotation.Horaire : SensRotation.AntiHoraire;
+        UpdateFlecheDirection();
+        Debug.Log("TOURBILLON : Sens initial = " + sensActuel);
     }
 
     void Update()
     {
-        // check si joystick align� avec direction
-        float difference = Mathf.Abs(Mathf.DeltaAngle(directionJoystickActuelle, directionCibleActuelle));
-
-        if (difference <= tolerance)
+        // calculer changement d'angle
+        float deltaAngle = Mathf.DeltaAngle(angleJoystickPrecedent, angleJoystickActuel);
+        
+        // accumuler rotation
+        accumulateurRotation += deltaAngle;
+        
+        // debug
+        if (Mathf.Abs(deltaAngle) > 1f)
         {
-            // en �quilibre
-            if (!enEquilibre)
-            {
-                enEquilibre = true;
-                chronoChangement = 0f;
-            }
+            Debug.Log($"TOURBILLON : Delta={deltaAngle:F1}°, Accum={accumulateurRotation:F1}°, Sens attendu={sensActuel}");
+        }
+        
+        // check si rotation dans bon sens
+        bool enRotationCorrecte = false;
+        
+        if (sensActuel == SensRotation.Horaire && accumulateurRotation < -seuilRotation)
+        {
+            // rotation horaire détectée (angle diminue, donc négatif)
+            enRotationCorrecte = true;
+            accumulateurRotation = 0f; // reset
+            Debug.Log("TOURBILLON : ✓ Rotation HORAIRE détectée !");
+        }
+        else if (sensActuel == SensRotation.AntiHoraire && accumulateurRotation > seuilRotation)
+        {
+            // rotation anti-horaire détectée (angle augmente, donc positif)
+            enRotationCorrecte = true;
+            accumulateurRotation = 0f; // reset
+            Debug.Log("TOURBILLON : ✓ Rotation ANTI-HORAIRE détectée !");
+        }
 
+        if (enRotationCorrecte)
+        {
             chronoChangement += Time.deltaTime;
-
-            // changer direction apr�s temps �coul�
+            
             if (chronoChangement >= tempsAvantChangement)
             {
-                ChangerDirection();
+                ChangerSens();
             }
         }
         else
         {
-            enEquilibre = false;
-            chronoChangement = 0f;
+            // si pas de rotation dans bon sens, décrémenter doucement
+            chronoChangement = Mathf.Max(0, chronoChangement - Time.deltaTime * 0.5f);
+        }
+        
+        // reset accumulation si trop longtemps sans mouvement
+        if (Mathf.Abs(deltaAngle) < 0.1f)
+        {
+            accumulateurRotation = 0f;
+        }
+        
+        // sauvegarder angle précédent
+        angleJoystickPrecedent = angleJoystickActuel;
+    }
+
+    // appelé par DebugInputSimulator ou OSCInputManager avec valeurs faders
+    public void UpdateJoystick(int faderX, int faderY)
+    {
+        // convertir faderX/Y (0-4096) en position (-1 à 1)
+        float normalizedX = (faderX - 2048f) / 2048f; // -1 à 1
+        float normalizedY = (faderY - 2048f) / 2048f; // -1 à 1
+
+        // calculer angle (0° = droite, 90° = haut, 180° = gauche, 270° = bas)
+        angleJoystickActuel = Mathf.Atan2(normalizedY, normalizedX) * Mathf.Rad2Deg;
+        
+        // convertir pour que 0° = haut
+        angleJoystickActuel = (angleJoystickActuel + 90f) % 360f;
+        if (angleJoystickActuel < 0) angleJoystickActuel += 360f;
+
+        // update position du petit cercle
+        if (petitCercle != null)
+        {
+            float posX = normalizedX * rayonGrandCercle;
+            float posY = normalizedY * rayonGrandCercle;
+            petitCercle.anchoredPosition = new Vector2(posX, posY);
         }
     }
 
-    // appel� par OSCInputManager avec valeurs faders
-    public void UpdateJoystick(int faderX, int faderY)
+    void ChangerSens()
     {
-        // convertir faderX/Y (0-4096) en angle (0-360)
-        // centrer autour de 2048
-        float normalizedX = (faderX - 2048f) / 2048f; // -1 � 1
-        float normalizedY = (faderY - 2048f) / 2048f; // -1 � 1
-
-        // calculer angle
-        directionJoystickActuelle = Mathf.Atan2(normalizedY, normalizedX) * Mathf.Rad2Deg;
-
-        // convertir pour que 0� = haut (ajuster selon ta config)
-        directionJoystickActuelle = (directionJoystickActuelle + 90f) % 360f;
-        if (directionJoystickActuelle < 0) directionJoystickActuelle += 360f;
-    }
-
-    void ChangerDirection()
-    {
-        // nouvelle direction al�atoire
-        directionCibleActuelle = Random.Range(0f, 360f);
-        UpdateFlecheRotation();
+        // inverser le sens
+        sensActuel = (sensActuel == SensRotation.Horaire) ? SensRotation.AntiHoraire : SensRotation.Horaire;
+        UpdateFlecheDirection();
         chronoChangement = 0f;
-        Debug.Log("TOURBILLON : Nouvelle direction = " + directionCibleActuelle + "�");
+        accumulateurRotation = 0f;
+        
+        Debug.Log("TOURBILLON : ✓✓✓ CHANGEMENT DE SENS ! Nouveau sens = " + sensActuel);
     }
 
-    void UpdateFlecheRotation()
+    void UpdateFlecheDirection()
     {
         if (flecheDirection != null)
         {
-            flecheDirection.localRotation = Quaternion.Euler(0, 0, -directionCibleActuelle); // n�gatif car rotation inverse
+            // afficher flèche circulaire selon sens
+            if (sensActuel == SensRotation.Horaire)
+            {
+                // flèche pointe dans sens horaire (rotation négative)
+                flecheDirection.localRotation = Quaternion.Euler(0, 0, 0);
+                flecheDirection.localScale = new Vector3(1, 1, 1); // normal
+            }
+            else
+            {
+                // flèche pointe dans sens anti-horaire (flip horizontal)
+                flecheDirection.localRotation = Quaternion.Euler(0, 0, 0);
+                flecheDirection.localScale = new Vector3(-1, 1, 1); // flip X
+            }
         }
     }
 
     public bool EstEnEquilibre()
     {
-        float difference = Mathf.Abs(Mathf.DeltaAngle(directionJoystickActuelle, directionCibleActuelle));
-        return difference <= tolerance;
+        return chronoChangement > 1f;
     }
 }
