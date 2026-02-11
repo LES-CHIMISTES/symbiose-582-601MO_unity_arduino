@@ -11,7 +11,7 @@ public class OSCInputManager : MonoBehaviour
     public MeshFeuController meshFeuController;
     public BecherController becherController;
     public EventGel eventGel;
-    public GameStateManager gameStateManager;
+    public GameManager GameManager;
 
     // Variables pour stocker les valeurs OSC
     private float accelX, accelY, accelZ;
@@ -25,6 +25,8 @@ public class OSCInputManager : MonoBehaviour
     public StationFeuFeedback stationFeuFeedback;
     public StationPoudresFeedback stationPoudresFeedback;
     public StationTourbillonFeedback stationTourbillonFeedback;
+
+    public TutorialManager tutorialManager;
 
     void Start()
     {
@@ -44,6 +46,11 @@ public class OSCInputManager : MonoBehaviour
 
     void AccelX(OSCMessage message)
     {
+        if (tutorialManager != null && !tutorialManager.EstStationActive("eau"))
+        {
+            return; // Bloquer l'input
+        }
+
         float value = message.Values[0].FloatValue;
         accelX = value;
 
@@ -95,6 +102,13 @@ public class OSCInputManager : MonoBehaviour
 
     void Angle(OSCMessage message)
     {
+
+        if (tutorialManager != null && !tutorialManager.EstStationActive("feu"))
+        {
+            return; // Bloquer l'input
+        }
+
+
         int value = (int)message.Values[0].FloatValue;
 
         // scale feu
@@ -119,7 +133,13 @@ public class OSCInputManager : MonoBehaviour
 
     void FaderX(OSCMessage message)
     {
+        if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon"))
+        {
+            return; // Bloquer l'input
+        }
+
         int value = (int)message.Values[0].FloatValue;
+
 
         // update � jour la rotation Z du b�cher
         if (becherController != null)
@@ -152,6 +172,11 @@ public class OSCInputManager : MonoBehaviour
 
     void FaderY(OSCMessage message)
     {
+        if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon"))
+        {
+            return; // Bloquer l'input
+        }
+
         int value = (int)message.Values[0].FloatValue;
 
         // update � jour la rotation Y du b�cher
@@ -184,8 +209,13 @@ public class OSCInputManager : MonoBehaviour
     }
 
     void Key1(OSCMessage message)
+
 {
-    int value = message.Values[0].IntValue;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres"))
+        {
+            return; // Bloquer l'input
+        }
+        int value = message.Values[0].IntValue;
 
     if (value == 1)
     {
@@ -209,7 +239,11 @@ public class OSCInputManager : MonoBehaviour
 
 void Key2(OSCMessage message)
 {
-    int value = message.Values[0].IntValue;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres"))
+        {
+            return; // Bloquer l'input
+        }
+        int value = message.Values[0].IntValue;
 
     if (value == 1)
     {
@@ -233,7 +267,11 @@ void Key2(OSCMessage message)
 
 void Key3(OSCMessage message)
 {
-    int value = message.Values[0].IntValue;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres"))
+        {
+            return; // Bloquer l'input
+        }
+        int value = message.Values[0].IntValue;
 
     if (value == 1)
     {

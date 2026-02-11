@@ -7,7 +7,7 @@ public class EventGel : MonoBehaviour
     public Slider jaugeTemperature;
     public GameObject patternRythmique; // parent img
     public Image[] imagesPattern; // 4 images cercles
-    public GameStateManager gameStateManager;
+    public GameManager GameManager;
     public OSCTransmitter oscTransmitter;
 
     public MeshEauController meshEau;
@@ -293,9 +293,9 @@ public class EventGel : MonoBehaviour
             patternRythmique.SetActive(false);
 
         DesactiverEffetsVisuelsGel();
-        if (gameStateManager != null)
+        if (GameManager != null)
         {
-            gameStateManager.EvenementResolu();
+            GameManager.EvenementResolu();
         }
 
         Invoke("DesactiverEvenement", 2f);
@@ -314,9 +314,9 @@ public class EventGel : MonoBehaviour
 
         DesactiverEffetsVisuelsGel();
 
-        if (gameStateManager != null)
+        if (GameManager != null)
         {
-            gameStateManager.EvenementEchoue();
+            GameManager.EvenementEchoue();
         }
     }
 
