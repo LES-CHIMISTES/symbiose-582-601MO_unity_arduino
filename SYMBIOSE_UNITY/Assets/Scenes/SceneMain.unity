@@ -3794,9 +3794,9 @@ MonoBehaviour:
   texteFeu: {fileID: 1852581537}
   textePoudres: {fileID: 1170418586}
   texteTourbillon: {fileID: 958880317}
-  couleurInactive: {r: 0, g: 0, b: 0, a: 0}
+  couleurInactive: {r: 0, g: 0, b: 0, a: 0.36862746}
   couleurActive: {r: 1, g: 1, b: 1, a: 1}
-  couleurComplete: {r: 0, g: 1, b: 0, a: 0}
+  couleurComplete: {r: 0, g: 1, b: 0, a: 0.3882353}
 --- !u!224 &952412293
 RectTransform:
   m_ObjectHideFlags: 0
