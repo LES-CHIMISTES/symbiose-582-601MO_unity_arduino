@@ -73,7 +73,7 @@ public class StationFeuFeedback : MonoBehaviour
                 if (barreImage != null)
                 {
                     Color couleur = barreImage.color;
-                    couleur.a = 1f - progression;
+                    couleur.a = 1f - (progression * 0.25f);
                     barreImage.color = couleur;
                 }
             }

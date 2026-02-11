@@ -3,99 +3,142 @@ using UnityEngine.UI;
 
 public class StationTourbillonFeedback : MonoBehaviour
 {
-    [Header("ui")]
+    [Header("UI")]
     public RectTransform flecheDirection; // flèche qui indique sens rotation souhaité
     public Image grandCercle; // cercle extérieur (zone)
     public RectTransform petitCercle; // cercle intérieur (position joystick)
+    public RectTransform cercleProgression; // cercle de progression qui grandit
 
-    [Header("params")]
-    public float rayonGrandCercle = 50f; // rayon du grand cercle
-    public float tempsAvantChangement = 2f; // temps en rotation correcte avant changement
-    public float seuilRotation = 10f; // seuil de rotation en degrés pour détecter mouvement
+    [Header("Params")]
+    public float rayonGrandCercle = 50f;
+    public float rotationRequiseParSeconde = 90f; // degrés de rotation par seconde requis
+    public float tempsMinAvantChangement = 7f;
+    public float tempsMaxAvantChangement = 11f;
 
     private enum SensRotation { Horaire, AntiHoraire }
     private SensRotation sensActuel = SensRotation.Horaire;
     private float angleJoystickPrecedent = 0f;
     private float angleJoystickActuel = 0f;
-    private float chronoChangement = 0f;
-    private float accumulateurRotation = 0f; // accumule les petites rotations
+    private float accumulateurRotation = 0f; // accumule les rotations dans le bon sens
+    private float tempsRequis = 2f;
+    private Vector3 scaleInitialCercleProgression;
+    private bool cercleProgressionActif = false;
 
     void Start()
     {
         // sens initial aléatoire
         sensActuel = Random.Range(0, 2) == 0 ? SensRotation.Horaire : SensRotation.AntiHoraire;
+
+        // temps requis aléatoire (entier entre 1 et 5)
+        tempsRequis = Random.Range((int)tempsMinAvantChangement, (int)tempsMaxAvantChangement + 1);
+
         UpdateFlecheDirection();
-        Debug.Log("TOURBILLON : Sens initial = " + sensActuel);
+
+        // save scale initial cercle progression
+        if (cercleProgression != null)
+        {
+            scaleInitialCercleProgression = cercleProgression.localScale;
+            cercleProgression.gameObject.SetActive(false);
+        }
+
+        Debug.Log($"TOURBILLON : Sens = {sensActuel}, Rotation requise = {rotationRequiseParSeconde * tempsRequis}° sur {tempsRequis}s");
     }
 
     void Update()
     {
         // calculer changement d'angle
         float deltaAngle = Mathf.DeltaAngle(angleJoystickPrecedent, angleJoystickActuel);
-        
-        // accumuler rotation
-        accumulateurRotation += deltaAngle;
-        
-        // debug
-        if (Mathf.Abs(deltaAngle) > 1f)
+
+        // accumuler rotation dans le bon sens
+        bool rotationCorrecteCeFrame = false;
+
+        if (sensActuel == SensRotation.Horaire && deltaAngle < 0) // horaire = angle diminue
         {
-            Debug.Log($"TOURBILLON : Delta={deltaAngle:F1}°, Accum={accumulateurRotation:F1}°, Sens attendu={sensActuel}");
+            accumulateurRotation += Mathf.Abs(deltaAngle); // ajouter rotation positive
+            rotationCorrecteCeFrame = true;
         }
-        
-        // check si rotation dans bon sens
-        bool enRotationCorrecte = false;
-        
-        if (sensActuel == SensRotation.Horaire && accumulateurRotation < -seuilRotation)
+        else if (sensActuel == SensRotation.AntiHoraire && deltaAngle > 0) // anti-horaire = angle augmente
         {
-            // rotation horaire détectée (angle diminue, donc négatif)
-            enRotationCorrecte = true;
-            accumulateurRotation = 0f; // reset
-            Debug.Log("TOURBILLON : ✓ Rotation HORAIRE détectée !");
+            accumulateurRotation += deltaAngle;
+            rotationCorrecteCeFrame = true;
         }
-        else if (sensActuel == SensRotation.AntiHoraire && accumulateurRotation > seuilRotation)
+        else if (Mathf.Abs(deltaAngle) > 1f) // rotation dans mauvais sens
         {
-            // rotation anti-horaire détectée (angle augmente, donc positif)
-            enRotationCorrecte = true;
-            accumulateurRotation = 0f; // reset
-            Debug.Log("TOURBILLON : ✓ Rotation ANTI-HORAIRE détectée !");
+            // pénalité : retirer de l'accumulateur
+            accumulateurRotation = Mathf.Max(0, accumulateurRotation - Mathf.Abs(deltaAngle) * 0.5f);
         }
 
-        if (enRotationCorrecte)
+        // calculer combien de rotation est nécessaire
+        float rotationTotaleRequise = rotationRequiseParSeconde * tempsRequis;
+        float progression = Mathf.Clamp01(accumulateurRotation / rotationTotaleRequise);
+
+        // afficher/update cercle progression
+        if (progression > 0.01f && !cercleProgressionActif)
         {
-            chronoChangement += Time.deltaTime;
-            
-            if (chronoChangement >= tempsAvantChangement)
+            cercleProgressionActif = true;
+            if (cercleProgression != null)
             {
-                ChangerSens();
+                cercleProgression.gameObject.SetActive(true);
+            }
+            Debug.Log($"TOURBILLON : ✓ Rotation {sensActuel} commencée...");
+        }
+
+        if (cercleProgressionActif && cercleProgression != null)
+        {
+            // scale: de petit (0.5) à grand (1.5)
+            float scaleFacteur = Mathf.Lerp(0.5f, 1.5f, progression);
+            cercleProgression.localScale = scaleInitialCercleProgression * scaleFacteur;
+
+            // fade in: de 0 à 0.8
+            Image cercleImage = cercleProgression.GetComponent<Image>();
+            if (cercleImage != null)
+            {
+                Color couleur = cercleImage.color;
+                couleur.a = Mathf.Lerp(0f, 0.8f, progression);
+                cercleImage.color = couleur;
             }
         }
-        else
+
+        // DEBUG
+        if (Time.frameCount % 30 == 0 && progression > 0.01f)
         {
-            // si pas de rotation dans bon sens, décrémenter doucement
-            chronoChangement = Mathf.Max(0, chronoChangement - Time.deltaTime * 0.5f);
+            Debug.Log($"TOURBILLON : Progression={progression:F2} ({accumulateurRotation:F0}°/{rotationTotaleRequise:F0}°)");
         }
-        
-        // reset accumulation si trop longtemps sans mouvement
-        if (Mathf.Abs(deltaAngle) < 0.1f)
+
+        // changement si objectif atteint
+        if (accumulateurRotation >= rotationTotaleRequise)
         {
-            accumulateurRotation = 0f;
+            ChangerSens();
         }
-        
+
+        // décrémentation lente si pas de rotation
+        if (Mathf.Abs(deltaAngle) < 0.5f)
+        {
+            accumulateurRotation = Mathf.Max(0, accumulateurRotation - Time.deltaTime * 20f);
+
+            // cacher cercle si revenu à 0
+            if (accumulateurRotation <= 0 && cercleProgressionActif)
+            {
+                cercleProgressionActif = false;
+                if (cercleProgression != null)
+                {
+                    cercleProgression.gameObject.SetActive(false);
+                }
+            }
+        }
+
         // sauvegarder angle précédent
         angleJoystickPrecedent = angleJoystickActuel;
     }
 
-    // appelé par DebugInputSimulator ou OSCInputManager avec valeurs faders
     public void UpdateJoystick(int faderX, int faderY)
     {
         // convertir faderX/Y (0-4096) en position (-1 à 1)
-        float normalizedX = (faderX - 2048f) / 2048f; // -1 à 1
-        float normalizedY = (faderY - 2048f) / 2048f; // -1 à 1
+        float normalizedX = (faderX - 2048f) / 2048f;
+        float normalizedY = (faderY - 2048f) / 2048f;
 
-        // calculer angle (0° = droite, 90° = haut, 180° = gauche, 270° = bas)
+        // calculer angle
         angleJoystickActuel = Mathf.Atan2(normalizedY, normalizedX) * Mathf.Rad2Deg;
-        
-        // convertir pour que 0° = haut
         angleJoystickActuel = (angleJoystickActuel + 90f) % 360f;
         if (angleJoystickActuel < 0) angleJoystickActuel += 360f;
 
@@ -112,28 +155,33 @@ public class StationTourbillonFeedback : MonoBehaviour
     {
         // inverser le sens
         sensActuel = (sensActuel == SensRotation.Horaire) ? SensRotation.AntiHoraire : SensRotation.Horaire;
+
+        // nouveau temps requis
+        tempsRequis = Random.Range((int)tempsMinAvantChangement, (int)tempsMaxAvantChangement + 1);
+
         UpdateFlecheDirection();
-        chronoChangement = 0f;
         accumulateurRotation = 0f;
-        
-        Debug.Log("TOURBILLON : ✓✓✓ CHANGEMENT DE SENS ! Nouveau sens = " + sensActuel);
+        cercleProgressionActif = false;
+
+        // cacher cercle progression
+        if (cercleProgression != null)
+        {
+            cercleProgression.gameObject.SetActive(false);
+        }
+
+        Debug.Log($"TOURBILLON : ✓✓✓ FLIP ! Nouveau sens = {sensActuel}, Rotation requise = {rotationRequiseParSeconde * tempsRequis}° sur {tempsRequis}s");
     }
 
     void UpdateFlecheDirection()
     {
         if (flecheDirection != null)
         {
-            // afficher flèche circulaire selon sens
             if (sensActuel == SensRotation.Horaire)
             {
-                // flèche pointe dans sens horaire (rotation négative)
-                flecheDirection.localRotation = Quaternion.Euler(0, 0, 0);
-                flecheDirection.localScale = new Vector3(1, 1, 1); // normal
+                flecheDirection.localScale = new Vector3(1, 1, 1);
             }
             else
             {
-                // flèche pointe dans sens anti-horaire (flip horizontal)
-                flecheDirection.localRotation = Quaternion.Euler(0, 0, 0);
                 flecheDirection.localScale = new Vector3(-1, 1, 1); // flip X
             }
         }
@@ -141,6 +189,6 @@ public class StationTourbillonFeedback : MonoBehaviour
 
     public bool EstEnEquilibre()
     {
-        return chronoChangement > 1f;
+        return accumulateurRotation > (rotationRequiseParSeconde * 0.5f);
     }
 }

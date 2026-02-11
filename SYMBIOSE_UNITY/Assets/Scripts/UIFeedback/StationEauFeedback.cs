@@ -3,93 +3,117 @@ using UnityEngine.UI;
 
 public class StationEauFeedback : MonoBehaviour
 {
-    [Header("ui")]
-    public Slider jaugeEau; // jauge verticale
-    public RectTransform cibleEau; // tiret rouge
-    public RectTransform barreTemps; // barre horizontale qui scale
+    [Header("UI")]
+    public Slider jaugeEau;
+    public RectTransform cibleEau;
+    public RectTransform barreTemps;
 
-    [Header("params")]
-    public float positionCibleMin = 0.2f; // position min cible (20%)
-    public float positionCibleMax = 0.8f; // position max cible (80%)
-    public float tolerance = 0.1f; // marge d'erreur (10%)
-    public float tempsMaintien = 2f; // temps à maintenir à la cible
+    [Header("Params")]
+    public float tolerance = 0.08f;
+    public float tempsMaintien = 2f;
 
-    private float positionCibleActuelle = 0.5f; // position actuelle cible (0-1)
-    private float niveauEauActuel = 0f; // niveau eau actuel (0-1)
-    private float chronoMaintien = 0f; // chrono pour maintenir à la cible
+    private float positionCibleActuelle = 0.5f;
+    private float valeurCiblePourComparaison = 0.5f; // NOUVEAU : la vraie valeur pour comparaison
+    private float niveauEauActuel = 0f;
+    private float chronoMaintien = 0f;
     private bool enEquilibre = false;
-    private Vector3 scaleInitialBarre; // scale initial de la barre
+    private Vector3 scaleInitialBarre;
+
+    private RectTransform fillRect;
+    private RectTransform fillAreaRect;
+    private float hauteurCible = 0f;
 
     void Start()
     {
-        // position cible initiale
-        positionCibleActuelle = Random.Range(positionCibleMin, positionCibleMax);
+        // Trouver les composants Fill et Fill Area
+        if (jaugeEau != null)
+        {
+            Transform fillArea = jaugeEau.transform.Find("Fill Area");
+            if (fillArea != null)
+            {
+                fillAreaRect = fillArea.GetComponent<RectTransform>();
+                Transform fill = fillArea.Find("Fill");
+                if (fill != null)
+                {
+                    fillRect = fill.GetComponent<RectTransform>();
+                    Debug.Log("EAU : Fill et Fill Area trouvés !");
+                }
+            }
+        }
+
+        // Configurer la cible
+        if (cibleEau != null && fillAreaRect != null)
+        {
+            hauteurCible = cibleEau.rect.height;
+
+            cibleEau.anchorMin = fillAreaRect.anchorMin;
+            cibleEau.anchorMax = fillAreaRect.anchorMax;
+            cibleEau.pivot = new Vector2(0.5f, 0.5f);
+
+            Debug.Log($"EAU : Cible configurée - Hauteur = {hauteurCible}, Anchors = {cibleEau.anchorMin} / {cibleEau.anchorMax}");
+        }
+
+        positionCibleActuelle = Random.Range(0.2f, 0.8f);
         UpdateCiblePosition();
-        
-        // save scale initial barre
+
         if (barreTemps != null)
         {
             scaleInitialBarre = barreTemps.localScale;
-            // cacher barre au départ
             barreTemps.gameObject.SetActive(false);
         }
-        
-        Debug.Log("EAU : Cible initiale à " + (positionCibleActuelle * 100) + "%");
+
+        Debug.Log($"EAU : Cible initiale à {positionCibleActuelle:F3}");
     }
 
     void Update()
     {
-        // update jauge selon niveau eau
-    if (jaugeEau != null)
-    {
-        jaugeEau.value = niveauEauActuel;
-    }
+        if (jaugeEau != null)
+        {
+            jaugeEau.value = niveauEauActuel;
+        }
 
-    // check si niveau eau atteint cible
-    float difference = Mathf.Abs(niveauEauActuel - positionCibleActuelle);
-    
-    // DEBUG
-    Debug.Log($"EAU : Niveau={niveauEauActuel:F3}, Cible={positionCibleActuelle:F3}, Diff={difference:F3}, Tolérance={tolerance}");
-    
+        // IMPORTANT : Comparer avec valeurCiblePourComparaison au lieu de positionCibleActuelle
+        float difference = Mathf.Abs(niveauEauActuel - valeurCiblePourComparaison);
+
+        if (Time.frameCount % 60 == 0)
+        {
+            Debug.Log($"EAU : Niveau={niveauEauActuel:F3}, Cible={valeurCiblePourComparaison:F3}, Diff={difference:F3}, Tolérance={tolerance}, EnÉquilibre={difference <= tolerance}");
+        }
+
         if (difference <= tolerance)
         {
-            // en équilibre
             if (!enEquilibre)
             {
                 enEquilibre = true;
                 chronoMaintien = 0f;
-                
-                // afficher barre
+
                 if (barreTemps != null)
                 {
                     barreTemps.gameObject.SetActive(true);
                 }
+
+                Debug.Log("EAU : ✓ Entré en équilibre !");
             }
 
-            // compter temps en équilibre
             chronoMaintien += Time.deltaTime;
 
-            // update barre temps avec scale X
             if (barreTemps != null)
             {
                 float progression = chronoMaintien / tempsMaintien;
-                
-                // scale x (de 1 à 0)
+
                 Vector3 nouveauScale = scaleInitialBarre;
                 nouveauScale.x = scaleInitialBarre.x * (1f - progression);
                 barreTemps.localScale = nouveauScale;
-                
-                // fade out alpha
+
                 Image barreImage = barreTemps.GetComponent<Image>();
                 if (barreImage != null)
                 {
                     Color couleur = barreImage.color;
-                    couleur.a = 1f - progression;
+                    couleur.a = 1f - (progression * 0.5f);
                     barreImage.color = couleur;
                 }
             }
 
-            // changer cible après temps écoulé
             if (chronoMaintien >= tempsMaintien)
             {
                 DeplacerCible();
@@ -97,17 +121,14 @@ public class StationEauFeedback : MonoBehaviour
         }
         else
         {
-            // plus en équilibre
             if (enEquilibre)
             {
                 enEquilibre = false;
                 chronoMaintien = 0f;
-                
-                // cacher barre
+
                 if (barreTemps != null)
                 {
                     barreTemps.gameObject.SetActive(false);
-                    // reset pour prochaine fois
                     barreTemps.localScale = scaleInitialBarre;
                     Image barreImage = barreTemps.GetComponent<Image>();
                     if (barreImage != null)
@@ -117,11 +138,12 @@ public class StationEauFeedback : MonoBehaviour
                         barreImage.color = couleur;
                     }
                 }
+
+                Debug.Log("EAU : Sorti de l'équilibre");
             }
         }
     }
 
-    // appelé par MeshEauController ou DebugInputSimulator
     public void UpdateNiveauEau(float niveau)
     {
         niveauEauActuel = Mathf.Clamp01(niveau);
@@ -129,37 +151,42 @@ public class StationEauFeedback : MonoBehaviour
 
     void DeplacerCible()
     {
-        // nouvelle position aléatoire
-        positionCibleActuelle = Random.Range(positionCibleMin, positionCibleMax);
+        positionCibleActuelle = Random.Range(0.2f, 0.8f);
         UpdateCiblePosition();
         chronoMaintien = 0f;
         enEquilibre = false;
-        
-        // cacher barre
+
         if (barreTemps != null)
         {
             barreTemps.gameObject.SetActive(false);
         }
-        
-        Debug.Log("EAU : Nouvelle cible à " + (positionCibleActuelle * 100) + "%");
+
+        Debug.Log($"EAU : ✓✓ Nouvelle cible à {positionCibleActuelle:F3}");
     }
 
     void UpdateCiblePosition()
     {
-        if (cibleEau == null || jaugeEau == null) return;
+        if (cibleEau == null || fillRect == null || fillAreaRect == null) return;
 
-        // calculer position Y du tiret selon position cible
-        RectTransform jaugeRect = jaugeEau.GetComponent<RectTransform>();
-        float hauteurJauge = jaugeRect.rect.height;
-        float positionY = hauteurJauge * positionCibleActuelle - (hauteurJauge / 2f);
+        float fillAreaHeight = fillAreaRect.rect.height;
+        float topOffset = Mathf.Abs(fillRect.offsetMax.y);
 
-        // positionner le tiret
+        // Positionner visuellement la cible (garde le code actuel)
+        float positionHautFillReel = (fillAreaHeight * positionCibleActuelle) + topOffset;
+        float positionY = positionHautFillReel + (hauteurCible / 2f);
         cibleEau.anchoredPosition = new Vector2(cibleEau.anchoredPosition.x, positionY);
+
+        // OPTION : Détecter au HAUT de la cible au lieu du centre
+        float hautDeLaCible = positionY + (hauteurCible / 2f);
+        valeurCiblePourComparaison = (hautDeLaCible - topOffset) / fillAreaHeight;
+        valeurCiblePourComparaison = Mathf.Clamp01(valeurCiblePourComparaison);
+
+        Debug.Log($"EAU : Cible Y = {positionY:F1}, Haut cible = {hautDeLaCible:F1}, Valeur pour comparaison = {valeurCiblePourComparaison:F3} (positionCibleActuelle = {positionCibleActuelle:F3})");
     }
 
     public bool EstEnEquilibre()
     {
-        float difference = Mathf.Abs(niveauEauActuel - positionCibleActuelle);
+        float difference = Mathf.Abs(niveauEauActuel - valeurCiblePourComparaison);
         return difference <= tolerance;
     }
 }

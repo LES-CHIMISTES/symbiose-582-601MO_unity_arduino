@@ -3,35 +3,48 @@ using UnityEngine.UI;
 
 public class StationPoudresFeedback : MonoBehaviour
 {
-    [Header("ui")]
+    [Header("UI")]
     public Image cercleCouleur; // cercle qui change de couleur
 
-    [Header("couleurs - ORDRE IMPORTANT")]
+    [Header("Couleurs - ORDRE IMPORTANT")]
     public Color couleurVerte = new Color(0f, 1f, 0f);   // Key 1
     public Color couleurBleue = new Color(0f, 0f, 1f);   // Key 2
     public Color couleurBlanche = Color.white;           // Key 3
 
-    [Header("params")]
-    public float tempsPourReagir = 3f; // temps pour appuyer sur bon bouton
+    [Header("Params")]
+    public float delaiAvantFade = 1f; // délai avant que le fade commence
+    public float dureeFade = 3f; // durée du fade out
 
     private int couleurAttendue = 1; // 1=vert, 2=bleu, 3=blanc
-    private float chronoReaction = 0f;
+    private float chronoTotal = 0f;
+    private float tempsTotalMax; // delai + duree
 
     void Start()
     {
-        // couleur initiale
+        tempsTotalMax = delaiAvantFade + dureeFade;
         ChangerCouleur();
     }
 
     void Update()
     {
-        // compter temps de réaction
-        chronoReaction += Time.deltaTime;
+        // compter temps total
+        chronoTotal += Time.deltaTime;
+
+        // fade out progressif du cercle (APRÈS le délai)
+        if (cercleCouleur != null && chronoTotal >= delaiAvantFade)
+        {
+            float tempsDepuisDebutFade = chronoTotal - delaiAvantFade;
+            float progression = tempsDepuisDebutFade / dureeFade;
+
+            Color couleurActuelle = cercleCouleur.color;
+            couleurActuelle.a = 1f - progression; // fade de 1 à 0
+            cercleCouleur.color = couleurActuelle;
+        }
 
         // échec si timeout
-        if (chronoReaction >= tempsPourReagir)
+        if (chronoTotal >= tempsTotalMax)
         {
-            Debug.LogWarning("POUDRES : Timeout ! échec");
+            Debug.LogWarning("POUDRES : ✗ Timeout ! Échec");
             // TODO : notifier échec global
             ChangerCouleur(); // reset avec nouvelle couleur
         }
@@ -40,8 +53,8 @@ public class StationPoudresFeedback : MonoBehaviour
     // appelé par OSCInputManager ou DebugInputSimulator quand key appuyée
     public void AppuyerBouton(int keyNumber)
     {
-        Debug.Log("POUDRES : Bouton " + keyNumber + " appuyé, couleur attendue = " + couleurAttendue);
-        
+        Debug.Log($"POUDRES : Bouton {keyNumber} appuyé, couleur attendue = {couleurAttendue}");
+
         if (keyNumber == couleurAttendue)
         {
             // bon bouton !
@@ -50,7 +63,7 @@ public class StationPoudresFeedback : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("POUDRES : ✗ Mauvais bouton ! Attendu: " + couleurAttendue + ", Reçu: " + keyNumber);
+            Debug.LogWarning($"POUDRES : ✗ Mauvais bouton ! Attendu: {couleurAttendue}, Reçu: {keyNumber}");
             // TODO : notifier échec global
         }
     }
@@ -60,31 +73,39 @@ public class StationPoudresFeedback : MonoBehaviour
         // nouvelle couleur aléatoire (1, 2 ou 3)
         couleurAttendue = Random.Range(1, 4);
 
-        // update ui
+        // update ui avec alpha à 1 (pleine opacité)
         if (cercleCouleur != null)
         {
+            Color nouvelleCouleur;
             switch (couleurAttendue)
             {
                 case 1: // Key 1 = VERT
-                    cercleCouleur.color = couleurVerte;
+                    nouvelleCouleur = couleurVerte;
                     break;
                 case 2: // Key 2 = BLEU
-                    cercleCouleur.color = couleurBleue;
+                    nouvelleCouleur = couleurBleue;
                     break;
                 case 3: // Key 3 = BLANC
-                    cercleCouleur.color = couleurBlanche;
+                    nouvelleCouleur = couleurBlanche;
+                    break;
+                default:
+                    nouvelleCouleur = Color.white;
                     break;
             }
+
+            // reset alpha à 1
+            nouvelleCouleur.a = 1f;
+            cercleCouleur.color = nouvelleCouleur;
         }
 
         // reset chrono
-        chronoReaction = 0f;
-        
-        Debug.Log("POUDRES : Nouvelle couleur attendue = " + couleurAttendue + " (1=Vert/Key1, 2=Bleu/Key2, 3=Blanc/Key3)");
+        chronoTotal = 0f;
+
+        Debug.Log($"POUDRES : Nouvelle couleur = {couleurAttendue} (1=Vert, 2=Bleu, 3=Blanc), apparait 1s puis fade 3s");
     }
 
     public bool EstEnEquilibre()
     {
-        return chronoReaction < tempsPourReagir;
+        return chronoTotal < tempsTotalMax;
     }
 }
