@@ -9929,6 +9929,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: evenement_tourbillon
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c061393c6e785e942b662579daee0fd5,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4383235708451040129, guid: c061393c6e785e942b662579daee0fd5,
         type: 3}
       propertyPath: m_IsActive
@@ -16176,6 +16181,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: evenement_crystalisation
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c061393c6e785e942b662579daee0fd5,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1391719939715865698, guid: c061393c6e785e942b662579daee0fd5,
         type: 3}
       propertyPath: m_Materials.Array.data[0]
@@ -16516,6 +16526,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: evenement_evaporation
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c061393c6e785e942b662579daee0fd5,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1162804041639536417, guid: c061393c6e785e942b662579daee0fd5,
         type: 3}
