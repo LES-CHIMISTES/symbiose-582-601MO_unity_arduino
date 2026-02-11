@@ -5684,7 +5684,7 @@ ParticleSystem:
     donutRadius: 0.2
     m_Position: {x: 0, y: 0, z: 0}
     m_Rotation: {x: 0, y: 0, z: 0}
-    m_Scale: {x: 1, y: 10, z: 50}
+    m_Scale: {x: 50, y: 10, z: 69.56}
     placementMode: 0
     m_MeshMaterialIndex: 0
     m_MeshNormalOffset: 0
@@ -9777,7 +9777,7 @@ Transform:
   m_GameObject: {fileID: 186579617}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -12.443298, y: 2.8257575, z: -18.87819}
+  m_LocalPosition: {x: -20.3, y: 2.8257575, z: -41.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9928,6 +9928,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: evenement_tourbillon
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c061393c6e785e942b662579daee0fd5,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4383235708451040129, guid: c061393c6e785e942b662579daee0fd5,
         type: 3}
@@ -16176,6 +16181,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: evenement_crystalisation
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c061393c6e785e942b662579daee0fd5,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1391719939715865698, guid: c061393c6e785e942b662579daee0fd5,
         type: 3}
       propertyPath: m_Materials.Array.data[0]
@@ -16516,6 +16526,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: evenement_evaporation
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c061393c6e785e942b662579daee0fd5,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1162804041639536417, guid: c061393c6e785e942b662579daee0fd5,
         type: 3}
