@@ -234,8 +234,17 @@ public class OSCInputManager : MonoBehaviour
         {
             AudioManager.Instance.JouerKeyPress();
         }
+
     }
-}
+
+        else if (value == 0) // RELÂCHÉ - AJOUTER CETTE SECTION
+        {
+            if (stationPoudresFeedback != null)
+            {
+                stationPoudresFeedback.RelacherBouton(1); // NOUVELLE FONCTION
+            }
+        }
+    }
 
 void Key2(OSCMessage message)
 {
@@ -263,7 +272,14 @@ void Key2(OSCMessage message)
             AudioManager.Instance.JouerKeyPress();
         }
     }
-}
+        else if (value == 0) // RELÂCHÉ - AJOUTER CETTE SECTION
+        {
+            if (stationPoudresFeedback != null)
+            {
+                stationPoudresFeedback.RelacherBouton(2); // NOUVELLE FONCTION
+            }
+        }
+    }
 
 void Key3(OSCMessage message)
 {
@@ -291,5 +307,13 @@ void Key3(OSCMessage message)
             AudioManager.Instance.JouerKeyPress();
         }
     }
-}
+
+        else if (value == 0) // RELÂCHÉ - AJOUTER CETTE SECTION
+        {
+            if (stationPoudresFeedback != null)
+            {
+                stationPoudresFeedback.RelacherBouton(3); // NOUVELLE FONCTION
+            }
+        }
+    }
 }

@@ -1,8 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
+using extOSC;
 
 public class StationPoudresFeedback : MonoBehaviour
 {
+    public OSCTransmitter oscTransmitter;
+
     [Header("UI")]
     public Image cercleCouleur; // cercle qui change de couleur
 
@@ -55,6 +58,8 @@ public class StationPoudresFeedback : MonoBehaviour
     {
         Debug.Log($"POUDRES : Bouton {keyNumber} appuyé, couleur attendue = {couleurAttendue}");
 
+        EnvoyerOSCKey(keyNumber, true);
+
         if (keyNumber == couleurAttendue)
         {
             // bon bouton !
@@ -66,6 +71,14 @@ public class StationPoudresFeedback : MonoBehaviour
             Debug.LogWarning($"POUDRES : ✗ Mauvais bouton ! Attendu: {couleurAttendue}, Reçu: {keyNumber}");
             // TODO : notifier échec global
         }
+    }
+
+    public void RelacherBouton(int keyNumber)
+    {
+        Debug.Log($"POUDRES : Bouton {keyNumber} relâché");
+
+        // ENVOYER OSC RELÂCHEMENT (0)
+        EnvoyerOSCKey(keyNumber, false);
     }
 
     void ChangerCouleur()
@@ -107,5 +120,23 @@ public class StationPoudresFeedback : MonoBehaviour
     public bool EstEnEquilibre()
     {
         return chronoTotal < tempsTotalMax;
+    }
+
+    void EnvoyerOSCKey(int keyNumber, bool appuye)
+    {
+        if (oscTransmitter == null)
+        {
+            Debug.LogError("OSC : oscTransmitter est NULL !");
+            return;
+        }
+
+        string adresse = $"/poudres/key{keyNumber}";
+        int valeur = appuye ? 1 : 0;
+
+        var message = new OSCMessage(adresse);
+        message.AddValue(OSCValue.Int(valeur));
+        oscTransmitter.Send(message);
+
+        Debug.Log($"OSC : Key{keyNumber} = {valeur} ({(appuye ? "APPUYÉ" : "RELÂCHÉ")}) envoyé à {adresse}");
     }
 }

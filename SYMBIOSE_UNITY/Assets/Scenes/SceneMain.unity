@@ -2501,6 +2501,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0bf2179538bc8b6439c31674681d0d42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  oscTransmitter: {fileID: 995772111}
   jaugeEau: {fileID: 431259201}
   cibleEau: {fileID: 1128390359}
   barreTemps: {fileID: 824626335}
@@ -2942,6 +2943,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43e849a8a34289246bae2bd94468f267, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  oscTransmitter: {fileID: 995772111}
   cercleCouleur: {fileID: 1808441019}
   couleurVerte: {r: 0, g: 1, b: 0, a: 1}
   couleurBleue: {r: 0, g: 0.4599247, b: 1, a: 1}

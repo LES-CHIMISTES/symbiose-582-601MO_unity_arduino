@@ -1,8 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
+using extOSC;
+using System.Collections;
 
 public class StationEauFeedback : MonoBehaviour
 {
+
+    public OSCTransmitter oscTransmitter;
     [Header("UI")]
     public Slider jaugeEau;
     public RectTransform cibleEau;
@@ -22,6 +26,7 @@ public class StationEauFeedback : MonoBehaviour
     private RectTransform fillRect;
     private RectTransform fillAreaRect;
     private float hauteurCible = 0f;
+
 
     void Start()
     {
@@ -161,6 +166,8 @@ public class StationEauFeedback : MonoBehaviour
             barreTemps.gameObject.SetActive(false);
         }
 
+        EnvoyerOSCDeplacementCible();
+
         Debug.Log($"EAU : ✓✓ Nouvelle cible à {positionCibleActuelle:F3}");
     }
 
@@ -188,5 +195,42 @@ public class StationEauFeedback : MonoBehaviour
     {
         float difference = Mathf.Abs(niveauEauActuel - valeurCiblePourComparaison);
         return difference <= tolerance;
+    }
+
+    void EnvoyerOSCDeplacementCible()
+    {
+        Debug.Log("=== DÉBUT EnvoyerOSCDeplacementCible ===");
+
+        if (oscTransmitter == null)
+        {
+            Debug.LogError("OSC : oscTransmitter est NULL !");
+            return;
+        }
+
+        Debug.Log("OSC : oscTransmitter OK, envoi du pulse...");
+
+        // Envoyer 1 (pulse ON)
+        var messagePulseOn = new OSCMessage("/eau/deplacer");
+        messagePulseOn.AddValue(OSCValue.Int(1));
+        oscTransmitter.Send(messagePulseOn);
+        Debug.Log("OSC : Pulse ON envoyé (1) à /eau/deplacer");
+
+        // Envoyer 0 après 0.5 secondes
+        StartCoroutine(EnvoyerPulseOff());
+
+        Debug.Log("=== FIN EnvoyerOSCDeplacementCible ===");
+    }
+
+    System.Collections.IEnumerator EnvoyerPulseOff()
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        if (oscTransmitter != null)
+        {
+            var messagePulseOff = new OSCMessage("/eau/deplacer");
+            messagePulseOff.AddValue(OSCValue.Int(0));
+            oscTransmitter.Send(messagePulseOff);
+            Debug.Log("OSC : Pulse OFF envoyé (0) à /eau/deplacer après 0.5s");
+        }
     }
 }
