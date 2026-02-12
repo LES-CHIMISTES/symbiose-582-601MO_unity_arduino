@@ -6,17 +6,17 @@ public class OSCInputManager : MonoBehaviour
     [Header("OSC")]
     public OSCReceiver oscReceiver;
 
-    [Header("Contrôleurs")]
+    [Header("Contrï¿½leurs")]
     public MeshEauController meshEauController;
     public MeshFeuController meshFeuController;
     public BecherController becherController;
     public EventGel eventGel;
-    public GameStateManager gameStateManager;
+    public GameManager GameManager;
 
     // Variables pour stocker les valeurs OSC
     private float accelX, accelY, accelZ;
     private int currentKey = 0; // 0 = aucune, 1 = key1, 2 = key2, 3 = key3
-    private int dernierFaderX = -1; // -1 = pas encore initialisé
+    private int dernierFaderX = -1; // -1 = pas encore initialisï¿½
     private int dernierFaderY = -1;
     private float seuilChangementFader = 75f; // changement minimum pour jouer le son
 
@@ -25,6 +25,8 @@ public class OSCInputManager : MonoBehaviour
     public StationFeuFeedback stationFeuFeedback;
     public StationPoudresFeedback stationPoudresFeedback;
     public StationTourbillonFeedback stationTourbillonFeedback;
+
+    public TutorialManager tutorialManager;
 
     void Start()
     {
@@ -44,6 +46,11 @@ public class OSCInputManager : MonoBehaviour
 
     void AccelX(OSCMessage message)
     {
+        if (tutorialManager != null && !tutorialManager.EstStationActive("eau"))
+        {
+            return; // Bloquer l'input
+        }
+
         float value = message.Values[0].FloatValue;
         accelX = value;
 
@@ -95,6 +102,13 @@ public class OSCInputManager : MonoBehaviour
 
     void Angle(OSCMessage message)
     {
+
+        if (tutorialManager != null && !tutorialManager.EstStationActive("feu"))
+        {
+            return; // Bloquer l'input
+        }
+
+
         int value = (int)message.Values[0].FloatValue;
 
         // scale feu
@@ -119,18 +133,18 @@ public class OSCInputManager : MonoBehaviour
 
     void FaderX(OSCMessage message)
     {
+        if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon"))
+        {
+            return; // Bloquer l'input
+        }
+
         int value = (int)message.Values[0].FloatValue;
 
-        // update à jour la rotation Z du bécher
+
+        // update ï¿½ jour la rotation Z du bï¿½cher
         if (becherController != null)
         {
             becherController.UpdateRotationZ(value);
-        }
-
-        // detect interaction pour GameStateManager
-        if (gameStateManager != null)
-        {
-            gameStateManager.DetecterInteractionFaderX(value);
         }
 
         if (stationTourbillonFeedback != null)
@@ -140,7 +154,7 @@ public class OSCInputManager : MonoBehaviour
         }
 
         // joue son seulement si changement significatif
-        if (dernierFaderX != -1) // if pas la première lecture
+        if (dernierFaderX != -1) // if pas la premiï¿½re lecture
         {
             int changement = Mathf.Abs(value - dernierFaderX);
             if (changement >= seuilChangementFader)
@@ -158,18 +172,17 @@ public class OSCInputManager : MonoBehaviour
 
     void FaderY(OSCMessage message)
     {
+        if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon"))
+        {
+            return; // Bloquer l'input
+        }
+
         int value = (int)message.Values[0].FloatValue;
 
-        // update à jour la rotation Y du bécher
+        // update ï¿½ jour la rotation Y du bï¿½cher
         if (becherController != null)
         {
             becherController.UpdateRotationY(value);
-        }
-
-        // detect interaction pour GameStateManager
-        if (gameStateManager != null)
-        {
-            gameStateManager.DetecterInteractionFaderY(value);
         }
 
         if (stationTourbillonFeedback != null)
@@ -179,7 +192,7 @@ public class OSCInputManager : MonoBehaviour
         }
 
         // joue son seulement si changement significatif
-        if (dernierFaderY != -1) // if pas la première lecture
+        if (dernierFaderY != -1) // if pas la premiï¿½re lecture
         {
             int changement = Mathf.Abs(value - dernierFaderY);
             if (changement >= seuilChangementFader)
@@ -196,104 +209,111 @@ public class OSCInputManager : MonoBehaviour
     }
 
     void Key1(OSCMessage message)
-    {
+
+{
+        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres"))
+        {
+            return; // Bloquer l'input
+        }
         int value = message.Values[0].IntValue;
 
-        if (value == 1)
+    if (value == 1)
+    {
+        if (meshEauController != null)
         {
-            currentKey = 1;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(1); // (vert)
-            }
-
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.JouerKeyPress();
-            }
-
-            if (stationPoudresFeedback != null)
-            {
-                stationPoudresFeedback.AppuyerBouton(1);
-            }
+            meshEauController.SetCouleur(1);
         }
-        else if (currentKey == 1)
+        
+        
+        if (stationPoudresFeedback != null)
         {
-            currentKey = 0;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(0); // couelur par défaut
-            }
+            stationPoudresFeedback.AppuyerBouton(1); 
+        }
+        
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerKeyPress();
         }
 
-        //Debug.Log("KEY 1 = " + value);
     }
 
-    void Key2(OSCMessage message)
-    {
-        int value = message.Values[0].IntValue;
-
-        if (value == 1)
+        else if (value == 0) // RELÃ‚CHÃ‰ - AJOUTER CETTE SECTION
         {
-            currentKey = 2;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(2); // (bleu)
-            }
-
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.JouerKeyPress();
-            }
-
             if (stationPoudresFeedback != null)
             {
-                stationPoudresFeedback.AppuyerBouton(1);
+                stationPoudresFeedback.RelacherBouton(1); // NOUVELLE FONCTION
             }
         }
-        else if (currentKey == 2)
-        {
-            currentKey = 0;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(0); // couelur par défaut
-            }
-        }
-
-        //Debug.Log("KEY 2 = " + value);
     }
 
-    void Key3(OSCMessage message)
-    {
+void Key2(OSCMessage message)
+{
+        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres"))
+        {
+            return; // Bloquer l'input
+        }
         int value = message.Values[0].IntValue;
 
-        if (value == 1)
+    if (value == 1)
+    {
+        if (meshEauController != null)
         {
-            currentKey = 3;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(3); // (mauve)
-            }
-
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.JouerKeyPress();
-            }
-
+            meshEauController.SetCouleur(2);
+        }
+        
+        
+        if (stationPoudresFeedback != null)
+        {
+            stationPoudresFeedback.AppuyerBouton(2);
+        }
+        
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerKeyPress();
+        }
+    }
+        else if (value == 0) // RELÃ‚CHÃ‰ - AJOUTER CETTE SECTION
+        {
             if (stationPoudresFeedback != null)
             {
-                stationPoudresFeedback.AppuyerBouton(1);
+                stationPoudresFeedback.RelacherBouton(2); // NOUVELLE FONCTION
             }
         }
-        else if (currentKey == 3)
-        {
-            currentKey = 0;
-            if (meshEauController != null)
-            {
-                meshEauController.SetCouleur(0); // couelur par défaut
-            }
-        }
+    }
 
-        //Debug.Log("KEY 3 = " + value);
+void Key3(OSCMessage message)
+{
+        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres"))
+        {
+            return; // Bloquer l'input
+        }
+        int value = message.Values[0].IntValue;
+
+    if (value == 1)
+    {
+        if (meshEauController != null)
+        {
+            meshEauController.SetCouleur(3);
+        }
+        
+        
+        if (stationPoudresFeedback != null)
+        {
+            stationPoudresFeedback.AppuyerBouton(3);
+        }
+        
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerKeyPress();
+        }
+    }
+
+        else if (value == 0) // RELÃ‚CHÃ‰ - AJOUTER CETTE SECTION
+        {
+            if (stationPoudresFeedback != null)
+            {
+                stationPoudresFeedback.RelacherBouton(3); // NOUVELLE FONCTION
+            }
+        }
     }
 }

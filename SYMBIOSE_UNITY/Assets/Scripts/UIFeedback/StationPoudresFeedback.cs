@@ -1,88 +1,142 @@
 using UnityEngine;
 using UnityEngine.UI;
+using extOSC;
 
 public class StationPoudresFeedback : MonoBehaviour
 {
-    [Header("ui")]
+    public OSCTransmitter oscTransmitter;
+
+    [Header("UI")]
     public Image cercleCouleur; // cercle qui change de couleur
 
-    [Header("couleurs")]
-    public Color couleurVerte = new Color(0f, 1f, 0f);
-    public Color couleurBleue = new Color(0f, 0f, 1f);
-    public Color couleurBlanche = Color.white;
+    [Header("Couleurs - ORDRE IMPORTANT")]
+    public Color couleurVerte = new Color(0f, 1f, 0f);   // Key 1
+    public Color couleurBleue = new Color(0f, 0f, 1f);   // Key 2
+    public Color couleurBlanche = Color.white;           // Key 3
 
-    [Header("params")]
-    public float tempsPourReagir = 2f; // temps pour appuyer sur bon bouton
+    [Header("Params")]
+    public float delaiAvantFade = 1f; // délai avant que le fade commence
+    public float dureeFade = 3f; // durée du fade out
 
-    private enum CouleurCible { Vert = 1, Bleu = 2, Blanc = 3 }
-    private CouleurCible couleurActuelle = CouleurCible.Vert;
-    private float chronoReaction = 0f;
+    private int couleurAttendue = 1; // 1=vert, 2=bleu, 3=blanc
+    private float chronoTotal = 0f;
+    private float tempsTotalMax; // delai + duree
 
     void Start()
     {
-        // couleur initiale
+        tempsTotalMax = delaiAvantFade + dureeFade;
         ChangerCouleur();
     }
 
     void Update()
     {
-        // compter temps de r�action
-        chronoReaction += Time.deltaTime;
+        // compter temps total
+        chronoTotal += Time.deltaTime;
 
-        // �chec si timeout
-        if (chronoReaction >= tempsPourReagir)
+        // fade out progressif du cercle (APRÈS le délai)
+        if (cercleCouleur != null && chronoTotal >= delaiAvantFade)
         {
-            Debug.LogWarning("POUDRES : Timeout ! �chec");
-            // TODO : notifier �chec global
+            float tempsDepuisDebutFade = chronoTotal - delaiAvantFade;
+            float progression = tempsDepuisDebutFade / dureeFade;
+
+            Color couleurActuelle = cercleCouleur.color;
+            couleurActuelle.a = 1f - progression; // fade de 1 à 0
+            cercleCouleur.color = couleurActuelle;
+        }
+
+        // échec si timeout
+        if (chronoTotal >= tempsTotalMax)
+        {
+            Debug.LogWarning("POUDRES : ✗ Timeout ! Échec");
+            // TODO : notifier échec global
             ChangerCouleur(); // reset avec nouvelle couleur
         }
     }
 
-    // appel� par OSCInputManager quand key appuy�e
+    // appelé par OSCInputManager ou DebugInputSimulator quand key appuyée
     public void AppuyerBouton(int keyNumber)
     {
-        if (keyNumber == (int)couleurActuelle)
+        Debug.Log($"POUDRES : Bouton {keyNumber} appuyé, couleur attendue = {couleurAttendue}");
+
+        EnvoyerOSCKey(keyNumber, true);
+
+        if (keyNumber == couleurAttendue)
         {
             // bon bouton !
-            Debug.Log("POUDRES : Bon bouton !");
+            Debug.Log("POUDRES : ✓ Bon bouton !");
             ChangerCouleur(); // nouvelle couleur
         }
         else
         {
-            Debug.LogWarning("POUDRES : Mauvais bouton !");
-            // TODO : notifier �chec global
+            Debug.LogWarning($"POUDRES : ✗ Mauvais bouton ! Attendu: {couleurAttendue}, Reçu: {keyNumber}");
+            // TODO : notifier échec global
         }
+    }
+
+    public void RelacherBouton(int keyNumber)
+    {
+        Debug.Log($"POUDRES : Bouton {keyNumber} relâché");
+
+        // ENVOYER OSC RELÂCHEMENT (0)
+        EnvoyerOSCKey(keyNumber, false);
     }
 
     void ChangerCouleur()
     {
-        // nouvelle couleur al�atoire
-        couleurActuelle = (CouleurCible)Random.Range(1, 4); // 1, 2 ou 3
+        // nouvelle couleur aléatoire (1, 2 ou 3)
+        couleurAttendue = Random.Range(1, 4);
 
-        // update ui
+        // update ui avec alpha à 1 (pleine opacité)
         if (cercleCouleur != null)
         {
-            switch (couleurActuelle)
+            Color nouvelleCouleur;
+            switch (couleurAttendue)
             {
-                case CouleurCible.Vert:
-                    cercleCouleur.color = couleurVerte;
+                case 1: // Key 1 = VERT
+                    nouvelleCouleur = couleurVerte;
                     break;
-                case CouleurCible.Bleu:
-                    cercleCouleur.color = couleurBleue;
+                case 2: // Key 2 = BLEU
+                    nouvelleCouleur = couleurBleue;
                     break;
-                case CouleurCible.Blanc:
-                    cercleCouleur.color = couleurBlanche;
+                case 3: // Key 3 = BLANC
+                    nouvelleCouleur = couleurBlanche;
+                    break;
+                default:
+                    nouvelleCouleur = Color.white;
                     break;
             }
+
+            // reset alpha à 1
+            nouvelleCouleur.a = 1f;
+            cercleCouleur.color = nouvelleCouleur;
         }
 
         // reset chrono
-        chronoReaction = 0f;
-        Debug.Log("POUDRES : Nouvelle couleur = " + couleurActuelle);
+        chronoTotal = 0f;
+
+        Debug.Log($"POUDRES : Nouvelle couleur = {couleurAttendue} (1=Vert, 2=Bleu, 3=Blanc), apparait 1s puis fade 3s");
     }
 
     public bool EstEnEquilibre()
     {
-        return chronoReaction < tempsPourReagir; // pas timeout
+        return chronoTotal < tempsTotalMax;
+    }
+
+    void EnvoyerOSCKey(int keyNumber, bool appuye)
+    {
+        if (oscTransmitter == null)
+        {
+            Debug.LogError("OSC : oscTransmitter est NULL !");
+            return;
+        }
+
+        string adresse = $"/poudres/key{keyNumber}";
+        int valeur = appuye ? 1 : 0;
+
+        var message = new OSCMessage(adresse);
+        message.AddValue(OSCValue.Int(valeur));
+        oscTransmitter.Send(message);
+
+        Debug.Log($"OSC : Key{keyNumber} = {valeur} ({(appuye ? "APPUYÉ" : "RELÂCHÉ")}) envoyé à {adresse}");
     }
 }
