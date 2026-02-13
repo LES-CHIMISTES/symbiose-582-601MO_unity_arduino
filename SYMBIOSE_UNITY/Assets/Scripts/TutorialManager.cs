@@ -21,6 +21,8 @@ public class TutorialManager : MonoBehaviour
     [Header("Paramètres")]
     public float tempsMaintienRequis = 1.5f; // temps minimum en équilibre pour valider l'étape
 
+    public AudioSource[] audioSourcesFeu;
+
     public enum TutorialStep
     {
         Eau = 0,
@@ -67,6 +69,11 @@ public class TutorialManager : MonoBehaviour
         SetAlphaColonne(colonneFeu, 0.5f);
         SetAlphaColonne(colonnePoudres, 0.5f);
         SetAlphaColonne(colonneTourbillon, 0.5f);
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.MuterSonsFeu(true);
+        }
 
         // Update UI
         if (tutorialUI != null)
@@ -166,11 +173,19 @@ public class TutorialManager : MonoBehaviour
             case TutorialStep.Feu:
                 if (stationFeu != null) stationFeu.enabled = true;
                 SetAlphaColonne(colonneFeu, 1f);
+
+                // NOUVEAU : Démuter sons feu
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.MuterSonsFeu(false);
+                }
                 break;
+
             case TutorialStep.Poudres:
                 if (stationPoudres != null) stationPoudres.enabled = true;
                 SetAlphaColonne(colonnePoudres, 1f);
                 break;
+
             case TutorialStep.Tourbillon:
                 if (stationTourbillon != null) stationTourbillon.enabled = true;
                 SetAlphaColonne(colonneTourbillon, 1f);
@@ -221,5 +236,24 @@ public class TutorialManager : MonoBehaviour
         }
 
         Debug.Log("TUTORIEL : ✓✓✓ Tutoriel terminé ! Phase principale commence.");
+    }
+
+    void MuterAudioFeu(bool mute)
+    {
+        if (audioSourcesFeu == null || audioSourcesFeu.Length == 0)
+        {
+            Debug.LogWarning("TUTORIEL : Aucun AudioSource Feu assigné !");
+            return;
+        }
+
+        foreach (AudioSource source in audioSourcesFeu)
+        {
+            if (source != null)
+            {
+                source.mute = mute;
+            }
+        }
+
+        Debug.Log($"TUTORIEL : Audio Feu {(mute ? "muté" : "démuté")} ({audioSourcesFeu.Length} sources)");
     }
 }

@@ -189,6 +189,6 @@ public class StationTourbillonFeedback : MonoBehaviour
 
     public bool EstEnEquilibre()
     {
-        return accumulateurRotation > (rotationRequiseParSeconde * 0.5f);
+        return accumulateurRotation > (rotationRequiseParSeconde * 1f);
     }
 }

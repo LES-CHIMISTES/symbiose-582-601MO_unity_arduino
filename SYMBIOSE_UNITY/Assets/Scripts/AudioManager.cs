@@ -172,4 +172,24 @@ public class AudioManager : MonoBehaviour
             Debug.Log("AUDIO : Frosting (gel)");
         }
     }
+
+    public void MuterSonsFeu(bool mute)
+    {
+        if (sourceBruleurLoop != null)
+        {
+            sourceBruleurLoop.mute = mute;
+        }
+
+        if (sourceBruleurEffets != null)
+        {
+            sourceBruleurEffets.mute = mute;
+        }
+
+        if (sourceBruleurAllumage != null)
+        {
+            sourceBruleurAllumage.mute = mute;
+        }
+
+        Debug.Log($"AUDIO : Sons feu {(mute ? "mutés" : "démutés")}");
+    }
 }

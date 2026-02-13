@@ -22,6 +22,8 @@ public class StationPoudresFeedback : MonoBehaviour
     private float chronoTotal = 0f;
     private float tempsTotalMax; // delai + duree
 
+    private bool bonBoutonAppuyeRecemment = false; // flag pour tutoriel
+
     void Start()
     {
         tempsTotalMax = delaiAvantFade + dureeFade;
@@ -50,6 +52,7 @@ public class StationPoudresFeedback : MonoBehaviour
             Debug.LogWarning("POUDRES : ✗ Timeout ! Échec");
             // TODO : notifier échec global
             ChangerCouleur(); // reset avec nouvelle couleur
+            bonBoutonAppuyeRecemment = false;
         }
     }
 
@@ -62,14 +65,14 @@ public class StationPoudresFeedback : MonoBehaviour
 
         if (keyNumber == couleurAttendue)
         {
-            // bon bouton !
             Debug.Log("POUDRES : ✓ Bon bouton !");
-            ChangerCouleur(); // nouvelle couleur
+            bonBoutonAppuyeRecemment = true; // MARQUER COMME RÉUSSI
+            ChangerCouleur();
         }
         else
         {
             Debug.LogWarning($"POUDRES : ✗ Mauvais bouton ! Attendu: {couleurAttendue}, Reçu: {keyNumber}");
-            // TODO : notifier échec global
+            bonBoutonAppuyeRecemment = false; // RESET
         }
     }
 
@@ -92,21 +95,12 @@ public class StationPoudresFeedback : MonoBehaviour
             Color nouvelleCouleur;
             switch (couleurAttendue)
             {
-                case 1: // Key 1 = VERT
-                    nouvelleCouleur = couleurVerte;
-                    break;
-                case 2: // Key 2 = BLEU
-                    nouvelleCouleur = couleurBleue;
-                    break;
-                case 3: // Key 3 = BLANC
-                    nouvelleCouleur = couleurBlanche;
-                    break;
-                default:
-                    nouvelleCouleur = Color.white;
-                    break;
+                case 1: nouvelleCouleur = couleurVerte; break;
+                case 2: nouvelleCouleur = couleurBleue; break;
+                case 3: nouvelleCouleur = couleurBlanche; break;
+                default: nouvelleCouleur = Color.white; break;
             }
 
-            // reset alpha à 1
             nouvelleCouleur.a = 1f;
             cercleCouleur.color = nouvelleCouleur;
         }
@@ -114,12 +108,23 @@ public class StationPoudresFeedback : MonoBehaviour
         // reset chrono
         chronoTotal = 0f;
 
-        Debug.Log($"POUDRES : Nouvelle couleur = {couleurAttendue} (1=Vert, 2=Bleu, 3=Blanc), apparait 1s puis fade 3s");
+        // NE PLUS RESET LE FLAG ICI - le laisser à true pour le tutoriel
+        // bonBoutonAppuyeRecemment = false;
+
+        Debug.Log($"POUDRES : Nouvelle couleur = {couleurAttendue} (1=Vert, 2=Bleu, 3=Blanc)");
     }
 
     public bool EstEnEquilibre()
     {
-        return chronoTotal < tempsTotalMax;
+        // En équilibre si bon bouton appuyé ET on est encore dans la fenêtre de temps
+        bool equilibre = bonBoutonAppuyeRecemment && chronoTotal < tempsTotalMax;
+
+        if (equilibre && Time.frameCount % 30 == 0)
+        {
+            Debug.Log($"POUDRES EstEnEquilibre : true (flag={bonBoutonAppuyeRecemment}, chrono={chronoTotal:F2}/{tempsTotalMax})");
+        }
+
+        return equilibre;
     }
 
     void EnvoyerOSCKey(int keyNumber, bool appuye)
