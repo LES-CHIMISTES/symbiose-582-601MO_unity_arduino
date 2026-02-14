@@ -18,6 +18,8 @@ public class GameManager : MonoBehaviour
     public int evenementsResolus = 0;
     public int evenementsEchoues = 0;
 
+    public bool enGameOver { get; private set; } = false;
+
     public enum GamePhase
     {
         Tutoriel,
@@ -30,7 +32,6 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
-        // Singleton
         if (Instance == null)
         {
             Instance = this;
@@ -49,7 +50,6 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // Update timer si actif
         if (timerActif)
         {
             tempsEcoule += Time.deltaTime;
@@ -59,30 +59,24 @@ public class GameManager : MonoBehaviour
     public void DemarrerTutoriel()
     {
         phaseActuelle = GamePhase.Tutoriel;
-        timerActif = true; // timer démarre dès le début
+        timerActif = true;
         tempsEcoule = 0f;
-
         OnTutorialStart?.Invoke();
-
-        Debug.Log("GAME : Tutoriel démarré, timer lancé");
+        Debug.Log("GAME : tutoriel démarré, timer lancé");
     }
 
     public void TerminerTutoriel()
     {
         OnTutorialComplete?.Invoke();
-
-        // Petit délai avant de lancer la phase principale
         Invoke(nameof(DemarrerPhasePrincipale), 1f);
-
-        Debug.Log("GAME : Tutoriel terminé !");
+        Debug.Log("GAME : tutoriel terminé");
     }
 
     void DemarrerPhasePrincipale()
     {
         phaseActuelle = GamePhase.PhasePrincipale;
         OnMainPhaseStart?.Invoke();
-
-        Debug.Log("GAME : Phase principale lancée !");
+        Debug.Log("GAME : phase principale lancée");
     }
 
     public void DeclencherGameOver()
@@ -91,25 +85,23 @@ public class GameManager : MonoBehaviour
 
         phaseActuelle = GamePhase.GameOver;
         timerActif = false;
+        enGameOver = true;
 
         OnGameOver?.Invoke();
 
-        Debug.Log($"GAME : Game Over ! Temps de survie : {FormatTemps(tempsEcoule)}");
+        Debug.Log($"GAME : game over, temps = {FormatTemps(tempsEcoule)}");
     }
 
-    // Méthodes pour les événements
     public void EvenementResolu()
     {
         evenementsResolus++;
-        Debug.Log($"GAME : Événement résolu ! Total : {evenementsResolus}");
+        Debug.Log($"GAME : événement résolu, total = {evenementsResolus}");
     }
 
     public void EvenementEchoue()
     {
         evenementsEchoues++;
-        Debug.Log($"GAME : Événement échoué ! Total : {evenementsEchoues}");
-
-        // Game Over si échec d'événement
+        Debug.Log($"GAME : événement échoué, total = {evenementsEchoues}");
         DeclencherGameOver();
     }
 

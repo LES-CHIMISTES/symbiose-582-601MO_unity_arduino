@@ -79,7 +79,7 @@ public class TutorialUI : MonoBehaviour
         if (index < 0 || index >= textes.Length || textes[index] == null) return;
         
         // Ajouter checkmark et changer couleur
-        textes[index].text = "ˇ " + instructionsBase[index];
+        textes[index].text = instructionsBase[index];
         textes[index].color = couleurComplete;
         
         // Fade out après 1 seconde

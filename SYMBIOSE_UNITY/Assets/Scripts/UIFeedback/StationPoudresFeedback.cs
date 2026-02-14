@@ -18,6 +18,9 @@ public class StationPoudresFeedback : MonoBehaviour
     public float delaiAvantFade = 1f; // délai avant que le fade commence
     public float dureeFade = 3f; // durée du fade out
 
+    [Header("Stabilité")]
+    public float perteStabiliteHorsEquilibre = 5f;
+
     private int couleurAttendue = 1; // 1=vert, 2=bleu, 3=blanc
     private float chronoTotal = 0f;
     private float tempsTotalMax; // delai + duree
@@ -32,47 +35,54 @@ public class StationPoudresFeedback : MonoBehaviour
 
     void Update()
     {
-        // compter temps total
         chronoTotal += Time.deltaTime;
 
-        // fade out progressif du cercle (APRÈS le délai)
         if (cercleCouleur != null && chronoTotal >= delaiAvantFade)
         {
             float tempsDepuisDebutFade = chronoTotal - delaiAvantFade;
             float progression = tempsDepuisDebutFade / dureeFade;
 
             Color couleurActuelle = cercleCouleur.color;
-            couleurActuelle.a = 1f - progression; // fade de 1 à 0
+            couleurActuelle.a = 1f - progression;
             cercleCouleur.color = couleurActuelle;
         }
 
-        // échec si timeout
         if (chronoTotal >= tempsTotalMax)
         {
-            Debug.LogWarning("POUDRES : ✗ Timeout ! Échec");
-            // TODO : notifier échec global
-            ChangerCouleur(); // reset avec nouvelle couleur
+            Debug.LogWarning("POUDRES : timeout échec");
+            ChangerCouleur();
             bonBoutonAppuyeRecemment = false;
+        }
+
+        // perte stabilité en phase principale
+        if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
+        {
+            if (!EstEnEquilibre() && StabilityManager.Instance != null)
+            {
+                StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "poudres hors équilibre");
+            }
         }
     }
 
     // appelé par OSCInputManager ou DebugInputSimulator quand key appuyée
     public void AppuyerBouton(int keyNumber)
     {
-        Debug.Log($"POUDRES : Bouton {keyNumber} appuyé, couleur attendue = {couleurAttendue}");
+        Debug.Log($"POUDRES : bouton {keyNumber} appuyé, attendu = {couleurAttendue}");
 
         EnvoyerOSCKey(keyNumber, true);
 
         if (keyNumber == couleurAttendue)
         {
-            Debug.Log("POUDRES : ✓ Bon bouton !");
-            bonBoutonAppuyeRecemment = true; // MARQUER COMME RÉUSSI
-            ChangerCouleur();
+            Debug.Log("POUDRES : ✓ bon bouton");
+            bonBoutonAppuyeRecemment = true;
+
+            // attendre 2 secondes avant de changer (laisse temps au tutoriel de valider)
+            Invoke(nameof(ChangerCouleurApresDelai), 2f);
         }
         else
         {
-            Debug.LogWarning($"POUDRES : ✗ Mauvais bouton ! Attendu: {couleurAttendue}, Reçu: {keyNumber}");
-            bonBoutonAppuyeRecemment = false; // RESET
+            Debug.LogWarning($"POUDRES : mauvais bouton, attendu = {couleurAttendue}, reçu = {keyNumber}");
+            bonBoutonAppuyeRecemment = false;
         }
     }
 
@@ -84,12 +94,15 @@ public class StationPoudresFeedback : MonoBehaviour
         EnvoyerOSCKey(keyNumber, false);
     }
 
+    void ChangerCouleurApresDelai()
+    {
+        ChangerCouleur();
+    }
+
     void ChangerCouleur()
     {
-        // nouvelle couleur aléatoire (1, 2 ou 3)
         couleurAttendue = Random.Range(1, 4);
 
-        // update ui avec alpha à 1 (pleine opacité)
         if (cercleCouleur != null)
         {
             Color nouvelleCouleur;
@@ -105,23 +118,18 @@ public class StationPoudresFeedback : MonoBehaviour
             cercleCouleur.color = nouvelleCouleur;
         }
 
-        // reset chrono
         chronoTotal = 0f;
 
-        // NE PLUS RESET LE FLAG ICI - le laisser à true pour le tutoriel
-        // bonBoutonAppuyeRecemment = false;
-
-        Debug.Log($"POUDRES : Nouvelle couleur = {couleurAttendue} (1=Vert, 2=Bleu, 3=Blanc)");
+        Debug.Log($"POUDRES : nouvelle couleur = {couleurAttendue}");
     }
 
     public bool EstEnEquilibre()
     {
-        // En équilibre si bon bouton appuyé ET on est encore dans la fenêtre de temps
         bool equilibre = bonBoutonAppuyeRecemment && chronoTotal < tempsTotalMax;
 
-        if (equilibre && Time.frameCount % 30 == 0)
+        if (equilibre && Time.frameCount % 60 == 0)
         {
-            Debug.Log($"POUDRES EstEnEquilibre : true (flag={bonBoutonAppuyeRecemment}, chrono={chronoTotal:F2}/{tempsTotalMax})");
+            Debug.Log($"POUDRES équilibre: flag={bonBoutonAppuyeRecemment}, chrono={chronoTotal:F2}/{tempsTotalMax}");
         }
 
         return equilibre;

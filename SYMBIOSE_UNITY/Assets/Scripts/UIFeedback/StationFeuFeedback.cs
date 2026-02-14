@@ -14,6 +14,9 @@ public class StationFeuFeedback : MonoBehaviour
     public float tolerance = 20f; // marge d'erreur (degrés)
     public float tempsAvantChangement = 3f; // temps avant nouvelle cible
 
+    [Header("Stabilité")]
+    public float perteStabiliteHorsEquilibre = 5f;
+
     private float angleCibleActuel = 0f; // angle cible actuel
     private float angleKnobActuel = 0f; // angle knob actuel (de l'osc)
     private float chronoChangement = 0f;
@@ -105,6 +108,14 @@ public class StationFeuFeedback : MonoBehaviour
                         couleur.a = 1f;
                         barreImage.color = couleur;
                     }
+                }
+            }
+            // stabilité
+            if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
+            {
+                if (StabilityManager.Instance != null)
+                {
+                    StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "Feu hors équilibre");
                 }
             }
         }

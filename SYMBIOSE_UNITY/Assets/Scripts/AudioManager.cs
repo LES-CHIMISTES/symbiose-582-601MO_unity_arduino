@@ -26,6 +26,11 @@ public class AudioManager : MonoBehaviour
     private AudioSource sourceBruleurEffets; // Pour allumage/théière
     private AudioSource sourceBruleurAllumage; // allumage
 
+    [Header("Sons Game Over")]
+    public AudioClip sonExplosion;
+    public AudioClip sonGameOver;
+    public AudioClip sonGameOver2;
+
     void Awake()
     {
         // sons singuliers
@@ -191,5 +196,55 @@ public class AudioManager : MonoBehaviour
         }
 
         Debug.Log($"AUDIO : Sons feu {(mute ? "mutés" : "démutés")}");
+    }
+
+    // ===== SONS GAME OVER =====
+    public void JouerSonsGameOver()
+    {
+        // demute temporairement sourceUI pour jouer les sons game over
+        if (sourceUI != null)
+        {
+            sourceUI.mute = false;
+        }
+
+        if (sonExplosion != null)
+        {
+            sourceUI.PlayOneShot(sonExplosion);
+        }
+
+        if (sonGameOver != null)
+        {
+            StartCoroutine(JouerApresDelai(sonGameOver, 0.5f));
+        }
+
+        if (sonGameOver2 != null)
+        {
+            StartCoroutine(JouerApresDelai(sonGameOver2, 1f));
+        }
+    }
+
+    public void MuterTout()
+    {
+        if (sourceUI != null) sourceUI.mute = true;
+        if (sourceInteractions != null) sourceInteractions.mute = true;
+        if (sourceBruleurLoop != null) sourceBruleurLoop.mute = true;
+        if (sourceBruleurEffets != null) sourceBruleurEffets.mute = true;
+        if (sourceBruleurAllumage != null) sourceBruleurAllumage.mute = true;
+    }
+
+    public void DemuterTout()
+    {
+        if (sourceUI != null) sourceUI.mute = false;
+        if (sourceInteractions != null) sourceInteractions.mute = false;
+        if (sourceBruleurLoop != null) sourceBruleurLoop.mute = false;
+        if (sourceBruleurEffets != null) sourceBruleurEffets.mute = false;
+        if (sourceBruleurAllumage != null) sourceBruleurAllumage.mute = false;
+    }
+
+    private System.Collections.IEnumerator JouerApresDelai(AudioClip clip, float delai)
+    {
+        yield return new WaitForSeconds(delai);
+        sourceUI.PlayOneShot(clip);
+        Debug.Log($"AUDIO : {clip.name} joué");
     }
 }

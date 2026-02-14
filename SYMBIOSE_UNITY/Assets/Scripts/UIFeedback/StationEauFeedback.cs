@@ -16,6 +16,9 @@ public class StationEauFeedback : MonoBehaviour
     public float tolerance = 0.08f;
     public float tempsMaintien = 2f;
 
+    [Header("Stabilité")]
+    public float perteStabiliteHorsEquilibre = 5f; // (par seconde)
+
     private float positionCibleActuelle = 0.5f;
     private float valeurCiblePourComparaison = 0.5f; // NOUVEAU : la vraie valeur pour comparaison
     private float niveauEauActuel = 0f;
@@ -145,6 +148,14 @@ public class StationEauFeedback : MonoBehaviour
                 }
 
                 Debug.Log("EAU : Sorti de l'équilibre");
+            }
+            // stabilité
+            if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
+            {
+                if (StabilityManager.Instance != null)
+                {
+                    StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "Eau hors équilibre");
+                }
             }
         }
     }

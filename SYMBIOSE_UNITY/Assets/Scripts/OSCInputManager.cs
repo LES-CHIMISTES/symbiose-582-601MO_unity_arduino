@@ -46,10 +46,8 @@ public class OSCInputManager : MonoBehaviour
 
     void AccelX(OSCMessage message)
     {
-        if (tutorialManager != null && !tutorialManager.EstStationActive("eau"))
-        {
-            return; // Bloquer l'input
-        }
+        if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("eau")) return;
 
         float value = message.Values[0].FloatValue;
         accelX = value;
@@ -103,10 +101,8 @@ public class OSCInputManager : MonoBehaviour
     void Angle(OSCMessage message)
     {
 
-        if (tutorialManager != null && !tutorialManager.EstStationActive("feu"))
-        {
-            return; // Bloquer l'input
-        }
+        if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("feu")) return;
 
 
         int value = (int)message.Values[0].FloatValue;
@@ -133,10 +129,8 @@ public class OSCInputManager : MonoBehaviour
 
     void FaderX(OSCMessage message)
     {
-        if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon"))
-        {
-            return; // Bloquer l'input
-        }
+        if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon")) return;
 
         int value = (int)message.Values[0].FloatValue;
 
@@ -172,10 +166,8 @@ public class OSCInputManager : MonoBehaviour
 
     void FaderY(OSCMessage message)
     {
-        if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon"))
-        {
-            return; // Bloquer l'input
-        }
+        if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon")) return;
 
         int value = (int)message.Values[0].FloatValue;
 
@@ -211,10 +203,8 @@ public class OSCInputManager : MonoBehaviour
     void Key1(OSCMessage message)
 
 {
-        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres"))
-        {
-            return; // Bloquer l'input
-        }
+        if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres")) return;
         int value = message.Values[0].IntValue;
 
     if (value == 1)
@@ -248,10 +238,8 @@ public class OSCInputManager : MonoBehaviour
 
 void Key2(OSCMessage message)
 {
-        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres"))
-        {
-            return; // Bloquer l'input
-        }
+        if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres")) return;
         int value = message.Values[0].IntValue;
 
     if (value == 1)
@@ -283,10 +271,8 @@ void Key2(OSCMessage message)
 
 void Key3(OSCMessage message)
 {
-        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres"))
-        {
-            return; // Bloquer l'input
-        }
+        if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
+        if (tutorialManager != null && !tutorialManager.EstStationActive("poudres")) return;
         int value = message.Values[0].IntValue;
 
     if (value == 1)

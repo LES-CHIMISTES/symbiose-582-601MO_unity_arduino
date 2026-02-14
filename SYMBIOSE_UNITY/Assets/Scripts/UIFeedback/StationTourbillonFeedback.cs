@@ -15,6 +15,9 @@ public class StationTourbillonFeedback : MonoBehaviour
     public float tempsMinAvantChangement = 7f;
     public float tempsMaxAvantChangement = 11f;
 
+    [Header("Stabilité")]
+    public float perteStabiliteHorsEquilibre = 5f;
+
     private enum SensRotation { Horaire, AntiHoraire }
     private SensRotation sensActuel = SensRotation.Horaire;
     private float angleJoystickPrecedent = 0f;
@@ -129,6 +132,14 @@ public class StationTourbillonFeedback : MonoBehaviour
 
         // sauvegarder angle précédent
         angleJoystickPrecedent = angleJoystickActuel;
+
+        if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
+        {
+            if (!EstEnEquilibre() && StabilityManager.Instance != null)
+            {
+                StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "Tourbillon hors équilibre");
+            }
+        }
     }
 
     public void UpdateJoystick(int faderX, int faderY)
