@@ -1,28 +1,36 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using extOSC;
 using System.Collections;
-using TMPro;
 
 public class EventGel : MonoBehaviour
 {
+    [Header("ui panel")]
+    public GameObject eventGelPanel;
+
     [Header("ui jauge")]
     public Slider jaugeTemperature;
     public Image fillJauge;
 
+    [Header("ui texte")]
+    public TextMeshProUGUI texteAlert;
+    public float dureeAffichageTexte = 3f;
+
     [Header("ui pattern")]
     public GameObject patternContainer;
     public RectTransform knobsContainer;
-    public GameObject prefabKnobCible;
+    public GameObject prefabFondKnob;
+    public GameObject prefabIndicateurCible;
+    public GameObject prefabIndicateurDynamique;
     public GameObject prefabFleche;
     public GameObject prefabCercleProgression;
+    public float tailleKnob = 100f;
 
-    [Header("knob dynamique")]
-    public RectTransform knobDynamique;
-
-    [Header("ui overlay")]
-    public Image overlayRouge;
-    public TextMeshProUGUI texteInstruction;
+    [Header("knob phase 1")]
+    public RectTransform knobDynamiquePhase1;
+    public Image knobMaxIndicateur;
+    public Image flecheCourbe;
 
     [Header("params phase 1")]
     public float seuilIntensiteMax = 1028f;
@@ -31,11 +39,12 @@ public class EventGel : MonoBehaviour
     [Header("params phase 2")]
     public float tolerancePattern = 200f;
     public float tempsMaxParEtape = 5f;
+    public float vitesseGelInaction = 5f;
 
     [Header("difficulte progressive")]
     public int nbKnobsMin = 4;
     public int nbKnobsMax = 10;
-    public float tempsSeuilNbKnobs = 360f; // 6 min
+    public float tempsSeuilNbKnobs = 360f;
 
     [Header("visuels")]
     public MeshRenderer potionRenderer;
@@ -55,15 +64,22 @@ public class EventGel : MonoBehaviour
     private float niveauFroid;
     private float chronoPhase1;
     private int valeurPotentiometre;
+    private int valeurPotentiometrePrecedente;
 
     private int nbKnobsTotal;
     private int[] positionsCibles;
     private int etapeActuelle;
     private float chronoEtape;
 
-    private GameObject[] knobsCibles;
+    private GameObject[] fondsKnobs;
+    private GameObject[] indicateursCibles;
+    private GameObject[] indicateursDynamiques;
     private GameObject[] fleches;
-    private GameObject cercleProgression;
+    private GameObject[] cerclesProgression;
+
+    private Coroutine fadeEnCours;
+
+    private bool validationEnCours = false;
 
     void OnEnable()
     {
@@ -76,8 +92,13 @@ public class EventGel : MonoBehaviour
         niveauFroid = 100f;
         chronoPhase1 = 0f;
         etapeActuelle = 0;
+        valeurPotentiometrePrecedente = valeurPotentiometre;
 
-        // calculer nb knobs selon difficulte
+        if (eventGelPanel != null)
+        {
+            eventGelPanel.SetActive(true);
+        }
+
         if (GameManager.Instance != null)
         {
             float progression = Mathf.Clamp01(GameManager.Instance.tempsEcoule / tempsSeuilNbKnobs);
@@ -88,10 +109,8 @@ public class EventGel : MonoBehaviour
             nbKnobsTotal = nbKnobsMin;
         }
 
-        // generer positions aleatoires
         GenererPositionsCibles();
 
-        // ui
         if (jaugeTemperature != null)
         {
             jaugeTemperature.gameObject.SetActive(true);
@@ -103,20 +122,31 @@ public class EventGel : MonoBehaviour
             patternContainer.SetActive(false);
         }
 
-        if (overlayRouge != null)
+        if (knobDynamiquePhase1 != null)
         {
-            overlayRouge.gameObject.SetActive(true);
-            StartCoroutine(AnimerOverlay());
+            knobDynamiquePhase1.gameObject.SetActive(true);
         }
 
-        if (texteInstruction != null)
+        if (knobMaxIndicateur != null)
         {
-            texteInstruction.text = "chaleur maximale !";
+            knobMaxIndicateur.gameObject.SetActive(true);
+            StartCoroutine(ClignoterKnobMax());
+        }
+
+        if (flecheCourbe != null)
+        {
+            flecheCourbe.gameObject.SetActive(true);
+        }
+
+        if (texteAlert != null)
+        {
+            texteAlert.gameObject.SetActive(true);
+            texteAlert.text = "la potion se gèle...";
+            StartCoroutine(FadeTexte());
         }
 
         ActiverEffetsVisuels();
 
-        // bloquer manipulation continue station feu
         if (stationFeu != null)
         {
             stationFeu.enabled = false;
@@ -125,21 +155,70 @@ public class EventGel : MonoBehaviour
         Debug.Log($"EVENT GEL : demarre, {nbKnobsTotal} knobs");
     }
 
+    IEnumerator ClignoterKnobMax()
+    {
+        if (knobMaxIndicateur == null) yield break;
+
+        while (phaseActuelle == PhaseGel.Phase1)
+        {
+            float elapsed = 0f;
+            float duree = 0.4f;
+            Image img = knobMaxIndicateur;
+            Color c = img.color;
+
+            while (elapsed < duree)
+            {
+                elapsed += Time.deltaTime;
+                c.a = Mathf.Lerp(0.3f, 1f, elapsed / duree);
+                img.color = c;
+                yield return null;
+            }
+
+            elapsed = 0f;
+            while (elapsed < duree)
+            {
+                elapsed += Time.deltaTime;
+                c.a = Mathf.Lerp(1f, 0.3f, elapsed / duree);
+                img.color = c;
+                yield return null;
+            }
+        }
+    }
+
+    IEnumerator FadeTexte()
+    {
+        if (texteAlert == null) yield break;
+
+        yield return new WaitForSeconds(dureeAffichageTexte);
+
+        float elapsed = 0f;
+        float duree = 1f;
+        Color c = texteAlert.color;
+
+        while (elapsed < duree)
+        {
+            elapsed += Time.deltaTime;
+            c.a = 1f - (elapsed / duree);
+            texteAlert.color = c;
+            yield return null;
+        }
+
+        texteAlert.gameObject.SetActive(false);
+    }
+
     void GenererPositionsCibles()
     {
         positionsCibles = new int[nbKnobsTotal];
 
-        // generer positions espacees
         for (int i = 0; i < nbKnobsTotal; i++)
         {
-            // alterner entre haut et bas pour varier
             if (i % 2 == 0)
             {
-                positionsCibles[i] = Random.Range(300, 1000); // haut
+                positionsCibles[i] = Random.Range(300, 1000);
             }
             else
             {
-                positionsCibles[i] = Random.Range(3000, 3700); // bas
+                positionsCibles[i] = Random.Range(3000, 3700);
             }
         }
     }
@@ -158,17 +237,27 @@ public class EventGel : MonoBehaviour
                 break;
         }
 
-        // update jauge
         if (jaugeTemperature != null)
         {
             jaugeTemperature.value = niveauFroid / 100f;
         }
 
-        // update knob dynamique rotation
-        if (knobDynamique != null)
+        if (phaseActuelle == PhaseGel.Phase1 && knobDynamiquePhase1 != null)
         {
             float angle = Mathf.Lerp(-180f, 180f, valeurPotentiometre / 4096f);
-            knobDynamique.localRotation = Quaternion.Euler(0, 0, angle);
+            knobDynamiquePhase1.localRotation = Quaternion.Euler(0, 0, angle);
+        }
+
+        if (phaseActuelle == PhaseGel.Phase2 && indicateursDynamiques != null)
+        {
+            float angle = Mathf.Lerp(-180f, 180f, valeurPotentiometre / 4096f);
+            foreach (GameObject indicateur in indicateursDynamiques)
+            {
+                if (indicateur != null)
+                {
+                    indicateur.transform.localRotation = Quaternion.Euler(0, 0, angle);
+                }
+            }
         }
     }
 
@@ -197,9 +286,19 @@ public class EventGel : MonoBehaviour
         etapeActuelle = 0;
         chronoEtape = 0f;
 
-        if (texteInstruction != null)
+        if (knobMaxIndicateur != null)
         {
-            texteInstruction.text = "suivez le pattern !";
+            knobMaxIndicateur.gameObject.SetActive(false);
+        }
+
+        if (flecheCourbe != null)
+        {
+            flecheCourbe.gameObject.SetActive(false);
+        }
+
+        if (knobDynamiquePhase1 != null)
+        {
+            knobDynamiquePhase1.gameObject.SetActive(false);
         }
 
         CreerUIPattern();
@@ -214,47 +313,121 @@ public class EventGel : MonoBehaviour
             patternContainer.SetActive(true);
         }
 
-        // determiner layout (1 ou 2 rows)
         int nbRows = nbKnobsTotal > 5 ? 2 : 1;
         int nbParRow = Mathf.CeilToInt(nbKnobsTotal / (float)nbRows);
 
-        knobsCibles = new GameObject[nbKnobsTotal];
+        fondsKnobs = new GameObject[nbKnobsTotal];
+        indicateursCibles = new GameObject[nbKnobsTotal];
+        indicateursDynamiques = new GameObject[nbKnobsTotal];
         fleches = new GameObject[nbKnobsTotal - 1];
 
-        float espacementX = 80f;
-        float espacementY = 100f;
+        float espacementX = tailleKnob + 40f;
+        float espacementY = tailleKnob + 40f;
+
+        // centrer le pattern
+        float largeurTotale = (nbParRow - 1) * espacementX;
+        float offsetX = -largeurTotale / 2f;
 
         for (int i = 0; i < nbKnobsTotal; i++)
         {
             int row = i / nbParRow;
             int col = i % nbParRow;
+            Vector2 pos = new Vector2(offsetX + col * espacementX, -row * espacementY);
 
-            // knob cible
-            GameObject knob = Instantiate(prefabKnobCible, knobsContainer);
-            RectTransform knobRT = knob.GetComponent<RectTransform>();
-            knobRT.anchoredPosition = new Vector2(col * espacementX, -row * espacementY);
+            // fond knob
+            GameObject fond = Instantiate(prefabFondKnob, knobsContainer);
+            RectTransform fondRT = fond.GetComponent<RectTransform>();
+            fondRT.anchoredPosition = pos;
+            fondRT.sizeDelta = new Vector2(tailleKnob, tailleKnob);
+            fondsKnobs[i] = fond;
 
-            // rotation selon position cible
-            float angle = Mathf.Lerp(-180f, 180f, positionsCibles[i] / 4096f);
-            knobRT.localRotation = Quaternion.Euler(0, 0, angle);
+            // indicateur cible
+            GameObject indicCible = Instantiate(prefabIndicateurCible, knobsContainer);
+            RectTransform indicCibleRT = indicCible.GetComponent<RectTransform>();
+            indicCibleRT.anchoredPosition = pos;
+            indicCibleRT.sizeDelta = new Vector2(tailleKnob, tailleKnob);
+            float angleCible = Mathf.Lerp(-180f, 180f, positionsCibles[i] / 4096f);
+            indicCibleRT.localRotation = Quaternion.Euler(0, 0, angleCible);
+            indicateursCibles[i] = indicCible;
 
-            knobsCibles[i] = knob;
+            // indicateur dynamique
+            GameObject indicDyn = Instantiate(prefabIndicateurDynamique, knobsContainer);
+            RectTransform indicDynRT = indicDyn.GetComponent<RectTransform>();
+            indicDynRT.anchoredPosition = pos;
+            indicDynRT.sizeDelta = new Vector2(tailleKnob, tailleKnob);
+            indicateursDynamiques[i] = indicDyn;
+
+            if (i > 0)
+            {
+                SetAlphaGroupe(fond, indicCible, indicDyn, 0.5f);
+            }
 
             // fleche
             if (i < nbKnobsTotal - 1)
             {
+                int nextRow = (i + 1) / nbParRow;
+
                 GameObject fleche = Instantiate(prefabFleche, knobsContainer);
                 RectTransform flecheRT = fleche.GetComponent<RectTransform>();
-                flecheRT.anchoredPosition = new Vector2((col + 0.5f) * espacementX, -row * espacementY);
+
+                if (row == nextRow)
+                {
+                    flecheRT.anchoredPosition = new Vector2(offsetX + (col + 0.5f) * espacementX, -row * espacementY);
+                }
+                else
+                {
+                    flecheRT.anchoredPosition = new Vector2(offsetX + largeurTotale + 30f, -row * espacementY - espacementY / 2f);
+                    flecheRT.localRotation = Quaternion.Euler(0, 0, -90f);
+                }
+
                 fleches[i] = fleche;
             }
         }
 
-        // cercle progression sur premier knob
-        if (prefabCercleProgression != null)
+        // cercles progression (un par knob)
+        cerclesProgression = new GameObject[nbKnobsTotal];
+        for (int i = 0; i < nbKnobsTotal; i++)
         {
-            cercleProgression = Instantiate(prefabCercleProgression, knobsCibles[0].transform);
-            cercleProgression.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+            if (prefabCercleProgression != null && fondsKnobs[i] != null)
+            {
+                GameObject cercle = Instantiate(prefabCercleProgression, fondsKnobs[i].transform);
+                RectTransform cercleRT = cercle.GetComponent<RectTransform>();
+                cercleRT.anchoredPosition = Vector2.zero;
+                cercleRT.sizeDelta = new Vector2(tailleKnob + 30f, tailleKnob + 30f);
+                cercleRT.SetAsLastSibling();
+
+                // visible seulement pour premier
+                cercle.SetActive(i == 0);
+
+                cerclesProgression[i] = cercle;
+            }
+        }
+    }
+
+    void SetAlphaGroupe(GameObject fond, GameObject cible, GameObject dyn, float alpha)
+    {
+        Image imgFond = fond.GetComponent<Image>();
+        if (imgFond != null)
+        {
+            Color c = imgFond.color;
+            c.a = alpha;
+            imgFond.color = c;
+        }
+
+        Image imgCible = cible.GetComponent<Image>();
+        if (imgCible != null)
+        {
+            Color c = imgCible.color;
+            c.a = alpha;
+            imgCible.color = c;
+        }
+
+        Image imgDyn = dyn.GetComponent<Image>();
+        if (imgDyn != null)
+        {
+            Color c = imgDyn.color;
+            c.a = alpha;
+            imgDyn.color = c;
         }
     }
 
@@ -268,22 +441,46 @@ public class EventGel : MonoBehaviour
             return;
         }
 
-        // check position
+        if (Mathf.Abs(valeurPotentiometre - valeurPotentiometrePrecedente) < 10)
+        {
+            niveauFroid += vitesseGelInaction * Time.deltaTime;
+            niveauFroid = Mathf.Min(100f, niveauFroid);
+        }
+
+        valeurPotentiometrePrecedente = valeurPotentiometre;
+
         float diff = Mathf.Abs(valeurPotentiometre - positionsCibles[etapeActuelle]);
 
-        // update cercle progression
-        if (cercleProgression != null)
+        if (cerclesProgression != null && cerclesProgression[etapeActuelle] != null)
         {
-            float proximite = 1f - Mathf.Clamp01(diff / tolerancePattern);
-            cercleProgression.transform.localScale = Vector3.one * Mathf.Lerp(0.5f, 1.2f, proximite);
+            // utiliser tolerance plus large pour le scale visuel
+            float toleranceVisuelle = 800f; // plus large que tolerancePattern
+            float proximite = 1f - Mathf.Clamp01(diff / toleranceVisuelle);
 
-            Image cercleImg = cercleProgression.GetComponent<Image>();
+            // inverser : proche = petit, loin = grand
+            cerclesProgression[etapeActuelle].transform.localScale = Vector3.one * Mathf.Lerp(1.5f, 0.8f, proximite);
+
+            Image cercleImg = cerclesProgression[etapeActuelle].GetComponent<Image>();
             if (cercleImg != null)
             {
                 Color c = cercleImg.color;
-                c.a = proximite;
+                c.a = 1f;
                 cercleImg.color = c;
             }
+        }
+
+        // fade knob actuel selon temps restant
+        if (fondsKnobs != null && etapeActuelle < fondsKnobs.Length)
+        {
+            float progression = chronoEtape / tempsMaxParEtape;
+            float alphaKnob = Mathf.Lerp(1f, 0.5f, progression);
+
+            SetAlphaGroupe(fondsKnobs[etapeActuelle], indicateursCibles[etapeActuelle], indicateursDynamiques[etapeActuelle], alphaKnob);
+        }
+
+        if (diff <= tolerancePattern)
+        {
+            ValiderEtape();
         }
 
         if (diff <= tolerancePattern)
@@ -294,18 +491,30 @@ public class EventGel : MonoBehaviour
 
     void ValiderEtape()
     {
+
+        if (validationEnCours) return; // empêcher double validation
+        validationEnCours = true;
+
         Debug.Log($"EVENT GEL : etape {etapeActuelle + 1}/{nbKnobsTotal} validee");
 
-        // fade knob actuel
-        StartCoroutine(FadeKnob(knobsCibles[etapeActuelle]));
-
-        // fade fleche
-        if (etapeActuelle < fleches.Length && fleches[etapeActuelle] != null)
+        if (fadeEnCours != null)
         {
-            StartCoroutine(FadeFleche(fleches[etapeActuelle]));
+            StopCoroutine(fadeEnCours);
         }
 
-        // update jauge
+        SetAlphaGroupe(fondsKnobs[etapeActuelle], indicateursCibles[etapeActuelle], indicateursDynamiques[etapeActuelle], 0.5f);
+
+        if (etapeActuelle < fleches.Length && fleches[etapeActuelle] != null)
+        {
+            Image imgFleche = fleches[etapeActuelle].GetComponent<Image>();
+            if (imgFleche != null)
+            {
+                Color c = imgFleche.color;
+                c.a = 0.5f;
+                imgFleche.color = c;
+            }
+        }
+
         niveauFroid -= 100f / nbKnobsTotal;
         niveauFroid = Mathf.Max(0f, niveauFroid);
 
@@ -318,68 +527,27 @@ public class EventGel : MonoBehaviour
         }
         else
         {
-            // deplacer cercle sur prochain knob
-            if (cercleProgression != null)
+            SetAlphaGroupe(fondsKnobs[etapeActuelle], indicateursCibles[etapeActuelle], indicateursDynamiques[etapeActuelle], 1f);
+
+            // cacher cercle etape precedente
+            if (cerclesProgression != null && etapeActuelle > 0 && cerclesProgression[etapeActuelle - 1] != null)
             {
-                cercleProgression.transform.SetParent(knobsCibles[etapeActuelle].transform);
-                cercleProgression.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+                cerclesProgression[etapeActuelle - 1].SetActive(false);
+            }
+
+            // afficher cercle etape suivante
+            if (cerclesProgression != null && etapeActuelle < cerclesProgression.Length && cerclesProgression[etapeActuelle] != null)
+            {
+                cerclesProgression[etapeActuelle].SetActive(true);
             }
         }
+
+        Invoke(nameof(ResetValidation), 0.3f);
     }
 
-    IEnumerator FadeKnob(GameObject knob)
+    void ResetValidation()
     {
-        Image img = knob.GetComponent<Image>();
-        if (img == null) yield break;
-
-        yield return new WaitForSeconds(1f);
-
-        float elapsed = 0f;
-        Color c = img.color;
-
-        while (elapsed < 3f)
-        {
-            elapsed += Time.deltaTime;
-            c.a = 1f - (elapsed / 3f);
-            img.color = c;
-            yield return null;
-        }
-    }
-
-    IEnumerator FadeFleche(GameObject fleche)
-    {
-        Image img = fleche.GetComponent<Image>();
-        if (img == null) yield break;
-
-        yield return new WaitForSeconds(1f);
-
-        float elapsed = 0f;
-        Color c = img.color;
-
-        while (elapsed < 3f)
-        {
-            elapsed += Time.deltaTime;
-            c.a = 1f - (elapsed / 3f);
-            img.color = c;
-            yield return null;
-        }
-    }
-
-    IEnumerator AnimerOverlay()
-    {
-        if (overlayRouge == null) yield break;
-
-        float duree = 0.5f;
-        float elapsed = 0f;
-        Color c = overlayRouge.color;
-
-        while (elapsed < duree)
-        {
-            elapsed += Time.deltaTime;
-            c.a = Mathf.Lerp(0f, 0.3f, elapsed / duree);
-            overlayRouge.color = c;
-            yield return null;
-        }
+        validationEnCours = false;
     }
 
     void ActiverEffetsVisuels()
@@ -491,11 +659,6 @@ public class EventGel : MonoBehaviour
             vignetteGel.gameObject.SetActive(false);
         }
 
-        if (overlayRouge != null)
-        {
-            overlayRouge.gameObject.SetActive(false);
-        }
-
         if (jaugeTemperature != null)
         {
             jaugeTemperature.gameObject.SetActive(false);
@@ -506,7 +669,26 @@ public class EventGel : MonoBehaviour
             patternContainer.SetActive(false);
         }
 
-        // reactiver station feu
+        if (knobMaxIndicateur != null)
+        {
+            knobMaxIndicateur.gameObject.SetActive(false);
+        }
+
+        if (flecheCourbe != null)
+        {
+            flecheCourbe.gameObject.SetActive(false);
+        }
+
+        if (texteAlert != null)
+        {
+            texteAlert.gameObject.SetActive(false);
+        }
+
+        if (eventGelPanel != null)
+        {
+            eventGelPanel.SetActive(false);
+        }
+
         if (stationFeu != null)
         {
             stationFeu.enabled = true;
@@ -514,12 +696,27 @@ public class EventGel : MonoBehaviour
 
         EnvoyerOSCLumiere(false);
 
-        // detruire knobs crees
-        if (knobsCibles != null)
+        if (fondsKnobs != null)
         {
-            foreach (GameObject knob in knobsCibles)
+            foreach (GameObject fond in fondsKnobs)
             {
-                if (knob != null) Destroy(knob);
+                if (fond != null) Destroy(fond);
+            }
+        }
+
+        if (indicateursCibles != null)
+        {
+            foreach (GameObject indic in indicateursCibles)
+            {
+                if (indic != null) Destroy(indic);
+            }
+        }
+
+        if (indicateursDynamiques != null)
+        {
+            foreach (GameObject indic in indicateursDynamiques)
+            {
+                if (indic != null) Destroy(indic);
             }
         }
 
@@ -531,9 +728,12 @@ public class EventGel : MonoBehaviour
             }
         }
 
-        if (cercleProgression != null)
+        if (cerclesProgression != null)
         {
-            Destroy(cercleProgression);
+            foreach (GameObject cercle in cerclesProgression)
+            {
+                if (cercle != null) Destroy(cercle);
+            }
         }
     }
 
