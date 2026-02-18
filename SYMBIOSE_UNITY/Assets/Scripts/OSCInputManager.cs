@@ -5,6 +5,7 @@ public class OSCInputManager : MonoBehaviour
 {
     [Header("OSC")]
     public OSCReceiver oscReceiver;
+    public OSCTransmitter oscTransmitter;
 
     [Header("Contr�leurs")]
     public MeshEauController meshEauController;
@@ -124,7 +125,18 @@ public class OSCInputManager : MonoBehaviour
             eventGel.UpdatePotentiometre(value);
         }
 
+        EnvoyerOSCAngle(value);
+
         //Debug.Log("ANGLE = " + value);
+    }
+
+    void EnvoyerOSCAngle(int valeur)
+    {
+        if (oscTransmitter == null) return;
+
+        var message = new OSCMessage("/feu/angle");
+        message.AddValue(OSCValue.Int(valeur));
+        oscTransmitter.Send(message);
     }
 
     void FaderX(OSCMessage message)

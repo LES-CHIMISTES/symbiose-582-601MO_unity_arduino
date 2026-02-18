@@ -58,6 +58,8 @@ public class EventGel : MonoBehaviour
     public MeshEauController meshEau;
     public StationFeuFeedback stationFeu;
 
+    public CanvasGroup colonneFeu;
+
     private enum PhaseGel { Phase1, Phase2, Resolu, Echec }
     private PhaseGel phaseActuelle;
 
@@ -80,6 +82,9 @@ public class EventGel : MonoBehaviour
     private Coroutine fadeEnCours;
 
     private bool validationEnCours = false;
+
+    private float chronoMaintienCible = 0f;
+    private float tempsMaintienRequis = 1f;
 
     void OnEnable()
     {
@@ -150,6 +155,11 @@ public class EventGel : MonoBehaviour
         if (stationFeu != null)
         {
             stationFeu.enabled = false;
+        }
+
+        if (colonneFeu != null)
+        {
+            colonneFeu.alpha = 0.25f;
         }
 
         Debug.Log($"EVENT GEL : demarre, {nbKnobsTotal} knobs");
@@ -469,8 +479,8 @@ public class EventGel : MonoBehaviour
             }
         }
 
-        // fade knob actuel selon temps restant
-        if (fondsKnobs != null && etapeActuelle < fondsKnobs.Length)
+        // fade knob actuel selon temps restant (si pas en maintien)
+        if (fondsKnobs != null && etapeActuelle < fondsKnobs.Length && diff > tolerancePattern)
         {
             float progression = chronoEtape / tempsMaxParEtape;
             float alphaKnob = Mathf.Lerp(1f, 0.5f, progression);
@@ -480,12 +490,21 @@ public class EventGel : MonoBehaviour
 
         if (diff <= tolerancePattern)
         {
-            ValiderEtape();
-        }
+            chronoMaintienCible += Time.deltaTime;
 
-        if (diff <= tolerancePattern)
+            // blink pendant maintien
+            float blinkSpeed = 8f;
+            float alphaBlink = Mathf.Lerp(0.6f, 1f, (Mathf.Sin(Time.time * blinkSpeed) + 1f) / 2f);
+            SetAlphaGroupe(fondsKnobs[etapeActuelle], indicateursCibles[etapeActuelle], indicateursDynamiques[etapeActuelle], alphaBlink);
+
+            if (chronoMaintienCible >= tempsMaintienRequis)
+            {
+                ValiderEtape();
+            }
+        }
+        else
         {
-            ValiderEtape();
+            chronoMaintienCible = 0f; // reset si sort de zone
         }
     }
 
@@ -494,6 +513,7 @@ public class EventGel : MonoBehaviour
 
         if (validationEnCours) return; // empêcher double validation
         validationEnCours = true;
+        chronoMaintienCible = 0f; // reset
 
         Debug.Log($"EVENT GEL : etape {etapeActuelle + 1}/{nbKnobsTotal} validee");
 
@@ -692,6 +712,11 @@ public class EventGel : MonoBehaviour
         if (stationFeu != null)
         {
             stationFeu.enabled = true;
+        }
+
+        if (colonneFeu != null)
+        {
+            colonneFeu.alpha = 1f;
         }
 
         EnvoyerOSCLumiere(false);
