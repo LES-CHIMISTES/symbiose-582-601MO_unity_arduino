@@ -29,6 +29,8 @@ public class OSCInputManager : MonoBehaviour
 
     public TutorialManager tutorialManager;
 
+    public EventEvaporation eventEvaporation;
+
     void Start()
     {
         oscReceiver.Bind("/accelX", AccelX);
@@ -64,15 +66,9 @@ public class OSCInputManager : MonoBehaviour
             stationEauFeedback.UpdateNiveauEau(niveau);
         }
 
-        // AJOUTER CECI
-        GameObject evapObj = GameObject.Find("EventEvaporation");
-        if (evapObj != null && evapObj.activeSelf)
+        if (eventEvaporation != null && eventEvaporation.gameObject.activeSelf)
         {
-            EventEvaporation eventEvap = evapObj.GetComponent<EventEvaporation>();
-            if (eventEvap != null)
-            {
-                eventEvap.UpdateAccel(accelX, accelY, accelZ);
-            }
+            eventEvaporation.UpdateAccel(accelX, accelY, accelZ);
         }
     }
 
@@ -81,15 +77,9 @@ public class OSCInputManager : MonoBehaviour
         float value = message.Values[0].FloatValue;
         accelY = value;
 
-        // AJOUTER CECI
-        GameObject evapObj = GameObject.Find("EventEvaporation");
-        if (evapObj != null && evapObj.activeSelf)
+        if (eventEvaporation != null && eventEvaporation.gameObject.activeSelf)
         {
-            EventEvaporation eventEvap = evapObj.GetComponent<EventEvaporation>();
-            if (eventEvap != null)
-            {
-                eventEvap.UpdateAccel(accelX, accelY, accelZ);
-            }
+            eventEvaporation.UpdateAccel(accelX, accelY, accelZ);
         }
     }
 
@@ -98,15 +88,9 @@ public class OSCInputManager : MonoBehaviour
         float value = message.Values[0].FloatValue;
         accelZ = value;
 
-        // AJOUTER CECI
-        GameObject evapObj = GameObject.Find("EventEvaporation");
-        if (evapObj != null && evapObj.activeSelf)
+        if (eventEvaporation != null && eventEvaporation.gameObject.activeSelf)
         {
-            EventEvaporation eventEvap = evapObj.GetComponent<EventEvaporation>();
-            if (eventEvap != null)
-            {
-                eventEvap.UpdateAccel(accelX, accelY, accelZ);
-            }
+            eventEvaporation.UpdateAccel(accelX, accelY, accelZ);
         }
     }
 

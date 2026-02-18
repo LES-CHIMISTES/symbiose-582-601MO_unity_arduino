@@ -3,51 +3,112 @@ using UnityEngine.UI;
 using TMPro;
 using extOSC;
 using System.Collections;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class EventEvaporation : MonoBehaviour
 {
-    [Header("ui panel")]
+    // =====================================================================
+    // REFERENCES UI
+    // =====================================================================
+
+    [Header("panel principal")]
     public GameObject eventEvaporationPanel;
 
-    [Header("ui jauge")]
-    public Slider jaugeRecuperation;
+    [Header("metre d'intensite vertical")]
+    public RectTransform metreConteneur;        // le conteneur vertical complet
+    public Image zoneTropFaible;                // section basse (bleu sombre)
+    public Image zoneOptimale;                  // section milieu (verte, cible)
+    public Image zoneTropFort;                  // section haute (rouge)
+    public RectTransform curseur;               // indicateur qui monte/descend
+    public Image curseurImage;                  // pour changer la couleur du curseur
+    public Image bordureZoneOptimale;           // bordure qui pulse autour de la zone verte
+
+    [Header("jauge de progression")]
+    public Slider jaugeProgression;
     public Image fillJauge;
-    public TextMeshProUGUI texteJauge;
 
-    [Header("ui intensite")]
-    public RectTransform indicateurIntensite;
-    public Image[] barresIntensite;
-    public Image zoneOptimale;
-    public TextMeshProUGUI texteFeedback;
+    [Header("icone secousse (optionnel)")]
+    public RectTransform iconeSecousse;         // petite icone qui shake visuellement
 
-    [Header("ui texte")]
-    public TextMeshProUGUI texteAlert;
-    public float dureeAffichageTexte = 3f;
+    // =====================================================================
+    // PARAMETRES GAMEPLAY
+    // =====================================================================
 
     [Header("params detection")]
-    public float seuilIntensiteMin = 0.5f;
-    public float seuilIntensiteOptimale = 2f;
-    public float seuilIntensiteMax = 5f;
-    public float multiplicateurRemplissage = 1f;
+    public float seuilIntensiteMin = 0.3f;      // en dessous = trop faible
+    public float seuilIntensiteOptimale = 1.5f;  // sweet spot haut
+    public float seuilIntensiteMax = 3f;         // au dessus = trop fort
+    public float multiplicateurRemplissage = 0.04f;
+    public float penaliteTropFort = 0.02f;       // recul de progression si trop fort
     public float tempsMaxAvantEchec = 30f;
 
+    [Header("params physique")]
+    public float multiplicateurMagnitude = 1.5f;
+    public float smoothMontee = 0.15f;
+    public float smoothDescente = 0.08f;
+    public float decroissanceParSeconde = 2f;
+
     [Header("difficulte progressive")]
-    public float seuilMinDebutant = 0.3f;
-    public float seuilMinExpert = 1f;
+    public float seuilMinDebutant = 0.2f;
+    public float seuilMinExpert = 0.8f;
     public float tempsSeuilDifficulte = 180f;
 
-    [Header("visuels")]
+    // =====================================================================
+    // PARAMETRES VISUELS
+    // =====================================================================
+
+    [Header("couleurs zones")]
+    public Color couleurTropFaibleInactif = new Color(0.15f, 0.2f, 0.35f, 0.6f);
+    public Color couleurTropFaibleActif = new Color(0.3f, 0.4f, 0.6f, 0.8f);
+    public Color couleurOptimaleInactif = new Color(0.2f, 0.5f, 0.2f, 0.5f);
+    public Color couleurOptimaleActif = new Color(0.3f, 0.9f, 0.3f, 0.9f);
+    public Color couleurTropFortInactif = new Color(0.35f, 0.15f, 0.15f, 0.4f);
+    public Color couleurTropFortActif = new Color(0.9f, 0.2f, 0.2f, 0.9f);
+
+    [Header("couleurs curseur")]
+    public Color couleurCurseurFaible = new Color(0.5f, 0.6f, 0.8f);
+    public Color couleurCurseurOptimal = new Color(0.3f, 1f, 0.3f);
+    public Color couleurCurseurTropFort = new Color(1f, 0.3f, 0.3f);
+
+    [Header("couleurs jauge progression")]
+    public Color couleurJaugeInactive = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+    public Color couleurJaugeActive = new Color(0.3f, 0.9f, 0.3f, 1f);
+
+    [Header("animation")]
+    public float vitessePulseBordure = 2f;       // vitesse du blink de la zone optimale
+    public float amplitudePulseBordure = 0.3f;
+    public float vitessePulseRapide = 5f;        // pulse rapide quand trop faible
+    public float intensiteShakeIcone = 5f;        // amplitude du shake de l'icone
+    public float vitesseShakeIcone = 25f;
+
+    [Header("post-processing")]
+    public Volume volumePostProcess;
+    private ColorAdjustments colorAdjustments;
+    private float saturationInitiale;
+    public float saturationMinimale = -80f;  // valeur desaturee pendant l'event
+
+    // =====================================================================
+    // REFERENCES VISUELS 3D ET SYSTEME
+    // =====================================================================
+
+    [Header("visuels 3d")]
     public MeshRenderer eauRenderer;
     public GameObject[] meshsBrouillard;
-    public Color couleurEvaporation = new Color(0.9f, 0.9f, 0.95f);
     public Color couleurEauTransparente = new Color(0.6f, 0.8f, 1f, 0.3f);
 
-    [Header("references")]
+    [Header("references systeme")]
     public GameManager gameManager;
     public OSCTransmitter oscTransmitter;
     public MeshEauController meshEau;
     public StationEauFeedback stationEau;
     public CanvasGroup colonneEau;
+
+    public GameObject meshACacher;
+
+    // =====================================================================
+    // VARIABLES PRIVEES
+    // =====================================================================
 
     private enum PhaseEvaporation { EnCours, Resolu, Echec }
     private PhaseEvaporation phaseActuelle;
@@ -55,12 +116,23 @@ public class EventEvaporation : MonoBehaviour
     private float progression = 0f;
     private float chronoTotal = 0f;
     private float intensiteActuelle = 0f;
+    private float intensiteCible = 0f;
 
     private float dernierAccelX = 0f;
     private float dernierAccelY = 0f;
     private float dernierAccelZ = 0f;
+    private bool accelInitialise = false;
 
     private Color couleurEauInitiale;
+    private Vector3 iconePositionInitiale;
+
+    // hauteur du metre pour positionner le curseur
+    private float metreHauteur = 0f;
+    private float metrePosYBas = 0f;
+
+    // =====================================================================
+    // INITIALISATION
+    // =====================================================================
 
     void OnEnable()
     {
@@ -73,44 +145,57 @@ public class EventEvaporation : MonoBehaviour
         progression = 0f;
         chronoTotal = 0f;
         intensiteActuelle = 0f;
+        intensiteCible = 0f;
+        accelInitialise = false;
 
-        // ajuster difficulte
+        // ajuster difficulte selon temps de jeu
         if (GameManager.Instance != null)
         {
             float progressionDifficulte = Mathf.Clamp01(GameManager.Instance.tempsEcoule / tempsSeuilDifficulte);
             seuilIntensiteMin = Mathf.Lerp(seuilMinDebutant, seuilMinExpert, progressionDifficulte);
         }
 
+        // activer panel
         if (eventEvaporationPanel != null)
         {
             eventEvaporationPanel.SetActive(true);
         }
 
-        if (jaugeRecuperation != null)
+        if (volumePostProcess != null && volumePostProcess.profile.TryGet(out colorAdjustments))
         {
-            jaugeRecuperation.gameObject.SetActive(true);
-            jaugeRecuperation.value = 0f;
+            saturationInitiale = colorAdjustments.saturation.value;
+            colorAdjustments.saturation.value = saturationMinimale;
         }
 
-        if (indicateurIntensite != null)
+        // initialiser jauge
+        if (jaugeProgression != null)
         {
-            indicateurIntensite.gameObject.SetActive(true);
+            jaugeProgression.value = 0f;
         }
 
-        if (texteAlert != null)
+        if (fillJauge != null)
         {
-            texteAlert.gameObject.SetActive(true);
-            texteAlert.text = "l'eau s'évapore...";
-            StartCoroutine(FadeTexte());
+            fillJauge.color = couleurJaugeInactive;
         }
 
-        if (texteFeedback != null)
+        // cacher curseur au bas du metre
+        if (curseur != null && metreConteneur != null)
         {
-            texteFeedback.text = "agitez !";
+            metreHauteur = metreConteneur.rect.height;
+            metrePosYBas = -metreHauteur / 2f;
+            curseur.anchoredPosition = new Vector2(curseur.anchoredPosition.x, metrePosYBas);
         }
 
+        // stocker position initiale de l'icone
+        if (iconeSecousse != null)
+        {
+            iconePositionInitiale = iconeSecousse.anchoredPosition;
+        }
+
+        // effets visuels 3d
         ActiverEffetsVisuels();
 
+        // desactiver feedback station eau normal
         if (stationEau != null)
         {
             stationEau.enabled = false;
@@ -124,31 +209,14 @@ public class EventEvaporation : MonoBehaviour
         Debug.Log($"EVENT EVAPORATION : demarre, seuil min = {seuilIntensiteMin:F2}");
     }
 
-    IEnumerator FadeTexte()
-    {
-        if (texteAlert == null) yield break;
-
-        yield return new WaitForSeconds(dureeAffichageTexte);
-
-        float elapsed = 0f;
-        float duree = 1f;
-        Color c = texteAlert.color;
-
-        while (elapsed < duree)
-        {
-            elapsed += Time.deltaTime;
-            c.a = 1f - (elapsed / duree);
-            texteAlert.color = c;
-            yield return null;
-        }
-
-        texteAlert.gameObject.SetActive(false);
-    }
+    // =====================================================================
+    // UPDATE PRINCIPAL
+    // =====================================================================
 
     void Update()
     {
         if (phaseActuelle != PhaseEvaporation.EnCours) return;
-        Debug.Log($"EVAP Update : intensite={intensiteActuelle:F2}, progression={progression:F2}");
+
         chronoTotal += Time.deltaTime;
 
         if (chronoTotal >= tempsMaxAvantEchec)
@@ -157,35 +225,54 @@ public class EventEvaporation : MonoBehaviour
             return;
         }
 
-        // calculer intensite (sera mis a jour par UpdateAccel)
-        UpdateBarresIntensite();
-        UpdateFeedback();
+        // decroissance naturelle entre messages OSC
+        intensiteCible = Mathf.Max(0f, intensiteCible - decroissanceParSeconde * Time.deltaTime);
 
-        // remplir jauge selon intensite
-        if (intensiteActuelle >= seuilIntensiteMin)
+        // smooth differenciee montee/descente
+        float smooth = (intensiteCible > intensiteActuelle) ? smoothMontee : smoothDescente;
+        intensiteActuelle = Mathf.Lerp(intensiteActuelle, intensiteCible, smooth);
+
+        // ---- mise a jour visuelle ----
+        UpdatePositionCurseur();
+        UpdateCouleursZones();
+        UpdateCouleurCurseur();
+        UpdatePulseBordure();
+        UpdateJaugeProgression();
+        UpdateIconeSecousse();
+
+        // ---- logique de remplissage ----
+        if (intensiteActuelle >= seuilIntensiteMin && intensiteActuelle <= seuilIntensiteMax)
         {
-            float facteurRemplissage = Mathf.InverseLerp(seuilIntensiteMin, seuilIntensiteOptimale, intensiteActuelle);
-            facteurRemplissage = Mathf.Clamp01(facteurRemplissage);
-
-            progression += facteurRemplissage * multiplicateurRemplissage * Time.deltaTime;
-            progression = Mathf.Clamp01(progression);
+            // dans la zone optimale : remplir
+            float facteur = Mathf.InverseLerp(seuilIntensiteMin, seuilIntensiteOptimale, intensiteActuelle);
+            facteur = Mathf.Clamp01(facteur);
+            progression += facteur * multiplicateurRemplissage * Time.deltaTime;
+        }
+        else if (intensiteActuelle > seuilIntensiteMax)
+        {
+            // trop fort : penalite (recul)
+            progression -= penaliteTropFort * Time.deltaTime;
         }
 
-        if (jaugeRecuperation != null)
+        progression = Mathf.Clamp01(progression);
+
+        // jauge UI
+        if (jaugeProgression != null)
         {
-            jaugeRecuperation.value = progression;
+            jaugeProgression.value = progression;
         }
 
-        if (texteJauge != null)
-        {
-            texteJauge.text = $"{Mathf.RoundToInt(progression * 100)}%";
-        }
-
-        // transparence eau proportionnelle
+        // transparence eau proportionnelle a la progression
         if (eauRenderer != null)
         {
             Color c = Color.Lerp(couleurEauTransparente, couleurEauInitiale, progression);
             eauRenderer.material.color = c;
+        }
+
+        if (colorAdjustments != null)
+        {
+            float saturationCible = Mathf.Lerp(saturationMinimale, saturationInitiale, progression);
+            colorAdjustments.saturation.value = Mathf.Lerp(colorAdjustments.saturation.value, saturationCible, Time.deltaTime * 3f);
         }
 
         if (progression >= 1f)
@@ -194,69 +281,160 @@ public class EventEvaporation : MonoBehaviour
         }
     }
 
-    void UpdateBarresIntensite()
+    // =====================================================================
+    // VISUEL : POSITION DU CURSEUR
+    // =====================================================================
+
+    void UpdatePositionCurseur()
     {
-        if (barresIntensite == null || barresIntensite.Length == 0) return;
+        if (curseur == null || metreConteneur == null) return;
 
-        int nbBarresActives = Mathf.RoundToInt((intensiteActuelle / seuilIntensiteMax) * barresIntensite.Length);
-        nbBarresActives = Mathf.Clamp(nbBarresActives, 0, barresIntensite.Length);
+        // recalculer au cas ou layout change
+        metreHauteur = metreConteneur.rect.height;
+        metrePosYBas = -metreHauteur / 2f;
 
-        for (int i = 0; i < barresIntensite.Length; i++)
+        // normaliser l'intensite sur la hauteur du metre (0 = bas, seuilMax = haut)
+        float t = Mathf.Clamp01(intensiteActuelle / seuilIntensiteMax);
+        float posY = Mathf.Lerp(metrePosYBas, -metrePosYBas, t);
+
+        curseur.anchoredPosition = new Vector2(curseur.anchoredPosition.x, posY);
+    }
+
+    // =====================================================================
+    // VISUEL : COULEURS DES ZONES
+    // =====================================================================
+
+    void UpdateCouleursZones()
+    {
+        // determiner dans quelle zone on est
+        bool dansFaible = intensiteActuelle < seuilIntensiteMin;
+        bool dansOptimale = intensiteActuelle >= seuilIntensiteMin && intensiteActuelle <= seuilIntensiteMax;
+        bool dansTropFort = intensiteActuelle > seuilIntensiteMax;
+
+        if (zoneTropFaible != null)
         {
-            if (barresIntensite[i] != null)
-            {
-                barresIntensite[i].enabled = i < nbBarresActives;
+            Color cible = dansFaible ? couleurTropFaibleActif : couleurTropFaibleInactif;
+            zoneTropFaible.color = Color.Lerp(zoneTropFaible.color, cible, Time.deltaTime * 8f);
+        }
 
-                // couleur selon zone
-                if (i < nbBarresActives)
-                {
-                    if (intensiteActuelle < seuilIntensiteMin)
-                    {
-                        barresIntensite[i].color = Color.red;
-                    }
-                    else if (intensiteActuelle <= seuilIntensiteOptimale)
-                    {
-                        barresIntensite[i].color = Color.green;
-                    }
-                    else
-                    {
-                        barresIntensite[i].color = Color.yellow;
-                    }
-                }
-            }
+        if (zoneOptimale != null)
+        {
+            Color cible = dansOptimale ? couleurOptimaleActif : couleurOptimaleInactif;
+            zoneOptimale.color = Color.Lerp(zoneOptimale.color, cible, Time.deltaTime * 8f);
+        }
+
+        if (zoneTropFort != null)
+        {
+            Color cible = dansTropFort ? couleurTropFortActif : couleurTropFortInactif;
+            zoneTropFort.color = Color.Lerp(zoneTropFort.color, cible, Time.deltaTime * 8f);
         }
     }
 
-    void UpdateFeedback()
-    {
-        if (texteFeedback == null) return;
+    // =====================================================================
+    // VISUEL : COULEUR DU CURSEUR
+    // =====================================================================
 
-        if (intensiteActuelle < seuilIntensiteMin * 0.5f)
+    void UpdateCouleurCurseur()
+    {
+        if (curseurImage == null) return;
+
+        Color cible;
+        if (intensiteActuelle < seuilIntensiteMin)
         {
-            texteFeedback.text = "plus fort !";
-            texteFeedback.color = Color.red;
+            cible = couleurCurseurFaible;
         }
-        else if (intensiteActuelle < seuilIntensiteMin)
+        else if (intensiteActuelle <= seuilIntensiteMax)
         {
-            texteFeedback.text = "encore !";
-            texteFeedback.color = new Color(1f, 0.5f, 0f);
-        }
-        else if (intensiteActuelle <= seuilIntensiteOptimale)
-        {
-            texteFeedback.text = "parfait !";
-            texteFeedback.color = Color.green;
+            cible = couleurCurseurOptimal;
         }
         else
         {
-            texteFeedback.text = "trop fort !";
-            texteFeedback.color = Color.yellow;
+            cible = couleurCurseurTropFort;
         }
+
+        curseurImage.color = Color.Lerp(curseurImage.color, cible, Time.deltaTime * 10f);
     }
+
+    // =====================================================================
+    // VISUEL : PULSE DE LA BORDURE ZONE OPTIMALE
+    // =====================================================================
+
+    void UpdatePulseBordure()
+    {
+        if (bordureZoneOptimale == null) return;
+
+        bool dansOptimale = intensiteActuelle >= seuilIntensiteMin && intensiteActuelle <= seuilIntensiteMax;
+        bool tropFaible = intensiteActuelle < seuilIntensiteMin;
+
+        // choisir vitesse de pulse
+        float vitesse = tropFaible ? vitessePulseRapide : vitessePulseBordure;
+
+        // pulse alpha entre (1 - amplitude) et 1
+        float alpha = 1f - amplitudePulseBordure + amplitudePulseBordure * Mathf.Sin(Time.time * vitesse * Mathf.PI);
+
+        Color c = bordureZoneOptimale.color;
+
+        if (dansOptimale)
+        {
+            // dans la zone : glow vert stable
+            c = couleurOptimaleActif;
+            c.a = alpha;
+        }
+        else
+        {
+            // hors zone : pulse pour attirer attention
+            c = tropFaible ? couleurOptimaleInactif : couleurTropFortActif;
+            c.a = alpha * 0.7f;
+        }
+
+        bordureZoneOptimale.color = c;
+    }
+
+    // =====================================================================
+    // VISUEL : JAUGE DE PROGRESSION
+    // =====================================================================
+
+    void UpdateJaugeProgression()
+    {
+        if (fillJauge == null) return;
+
+        bool enProgression = intensiteActuelle >= seuilIntensiteMin && intensiteActuelle <= seuilIntensiteMax;
+
+        Color cible = enProgression ? couleurJaugeActive : couleurJaugeInactive;
+        fillJauge.color = Color.Lerp(fillJauge.color, cible, Time.deltaTime * 6f);
+    }
+
+    // =====================================================================
+    // VISUEL : ICONE SECOUSSE
+    // =====================================================================
+
+    void UpdateIconeSecousse()
+    {
+        if (iconeSecousse == null) return;
+
+        // shake proportionnel a l'intensite
+        float amplitude = (intensiteActuelle / seuilIntensiteMax) * intensiteShakeIcone;
+        float offsetX = Mathf.Sin(Time.time * vitesseShakeIcone) * amplitude;
+        float offsetY = Mathf.Cos(Time.time * vitesseShakeIcone * 1.3f) * amplitude * 0.5f;
+
+        iconeSecousse.anchoredPosition = iconePositionInitiale + new Vector3(offsetX, offsetY, 0f);
+    }
+
+    // =====================================================================
+    // RECEPTION ACCELEROMETRE (appele par OSCInputManager)
+    // =====================================================================
 
     public void UpdateAccel(float accelX, float accelY, float accelZ)
     {
-        // DEBUG
-        Debug.Log($"EVAP : accel recu X={accelX:F2} Y={accelY:F2} Z={accelZ:F2}");
+        // ignorer premier message pour baseline
+        if (!accelInitialise)
+        {
+            dernierAccelX = accelX;
+            dernierAccelY = accelY;
+            dernierAccelZ = accelZ;
+            accelInitialise = true;
+            return;
+        }
 
         float deltaX = Mathf.Abs(accelX - dernierAccelX);
         float deltaY = Mathf.Abs(accelY - dernierAccelY);
@@ -264,14 +442,18 @@ public class EventEvaporation : MonoBehaviour
 
         float magnitudeChangement = Mathf.Sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
 
-        Debug.Log($"EVAP : magnitude={magnitudeChangement:F2}, intensite={intensiteActuelle:F2}");
-
-        intensiteActuelle = Mathf.Lerp(intensiteActuelle, magnitudeChangement * 10f, 0.3f);
+        // appliquer multiplicateur et garder la valeur haute
+        float nouvelleIntensite = magnitudeChangement * multiplicateurMagnitude;
+        intensiteCible = Mathf.Max(intensiteCible, nouvelleIntensite);
 
         dernierAccelX = accelX;
         dernierAccelY = accelY;
         dernierAccelZ = accelZ;
     }
+
+    // =====================================================================
+    // EFFETS VISUELS 3D
+    // =====================================================================
 
     void ActiverEffetsVisuels()
     {
@@ -294,39 +476,17 @@ public class EventEvaporation : MonoBehaviour
             }
         }
 
-        /*if (vignetteEvaporation != null)
+        if (meshACacher != null)
         {
-            StartCoroutine(AnimerVignette());
-        }*/
+            meshACacher.SetActive(false);
+        }
 
         EnvoyerOSCLumiere(true);
     }
 
- /*   IEnumerator AnimerVignette()
-    {
-        if (vignetteEvaporation == null) yield break;
-
-        vignetteEvaporation.gameObject.SetActive(true);
-        Color c = vignetteEvaporation.color;
-        c.a = 0f;
-        vignetteEvaporation.color = c;
-        vignetteEvaporation.transform.localScale = Vector3.one * 2f;
-
-        float elapsed = 0f;
-        float duree = 1.5f;
-
-        while (elapsed < duree)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / duree;
-
-            c.a = Mathf.Lerp(0f, 0.2f, t);
-            vignetteEvaporation.color = c;
-            vignetteEvaporation.transform.localScale = Vector3.one * Mathf.Lerp(2f, 1f, t);
-
-            yield return null;
-        }
-    }*/
+    // =====================================================================
+    // RESOLUTION / ECHEC
+    // =====================================================================
 
     void ResoudreEvenement()
     {
@@ -363,6 +523,10 @@ public class EventEvaporation : MonoBehaviour
         Debug.Log("EVENT EVAPORATION : echec");
     }
 
+    // =====================================================================
+    // NETTOYAGE
+    // =====================================================================
+
     void DesactiverEffets()
     {
         if (eauRenderer != null)
@@ -378,26 +542,6 @@ public class EventEvaporation : MonoBehaviour
             }
         }
 
-        /*if (vignetteEvaporation != null)
-        {
-            vignetteEvaporation.gameObject.SetActive(false);
-        }*/
-
-        if (jaugeRecuperation != null)
-        {
-            jaugeRecuperation.gameObject.SetActive(false);
-        }
-
-        if (indicateurIntensite != null)
-        {
-            indicateurIntensite.gameObject.SetActive(false);
-        }
-
-        if (texteAlert != null)
-        {
-            texteAlert.gameObject.SetActive(false);
-        }
-
         if (eventEvaporationPanel != null)
         {
             eventEvaporationPanel.SetActive(false);
@@ -411,6 +555,22 @@ public class EventEvaporation : MonoBehaviour
         if (colonneEau != null)
         {
             colonneEau.alpha = 1f;
+        }
+
+        // remettre icone a sa position
+        if (iconeSecousse != null)
+        {
+            iconeSecousse.anchoredPosition = iconePositionInitiale;
+        }
+
+        if (meshACacher != null)
+        {
+            meshACacher.SetActive(true);
+        }
+
+        if (colorAdjustments != null)
+        {
+            colorAdjustments.saturation.value = saturationInitiale;
         }
 
         EnvoyerOSCLumiere(false);
