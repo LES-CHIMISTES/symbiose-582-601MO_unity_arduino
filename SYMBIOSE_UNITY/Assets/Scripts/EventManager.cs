@@ -24,6 +24,9 @@ public class EventManager : MonoBehaviour
     private float prochainEvenement = 0f;
     private bool systemeActif = false;
 
+    private bool[] evenementsUtilises;
+    private GameObject dernierEvenement = null;
+
     void Awake()
     {
         if (Instance == null)
@@ -40,7 +43,9 @@ public class EventManager : MonoBehaviour
     {
         evenementsDisponibles = new GameObject[] { eventGel, eventEvaporation, eventCristallisation, eventVortex };
 
-        // desactiver tous les events au depart
+        // init tracking
+        evenementsUtilises = new bool[evenementsDisponibles.Length];
+
         foreach (GameObject evt in evenementsDisponibles)
         {
             if (evt != null)
@@ -49,7 +54,6 @@ public class EventManager : MonoBehaviour
             }
         }
 
-        // ecouter fin tutoriel
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnTutorialComplete.AddListener(ActiverSysteme);
@@ -77,7 +81,6 @@ public class EventManager : MonoBehaviour
 
     void DeclencherEvenementAleatoire()
     {
-        // filtrer events disponibles (non null et implemente)
         GameObject[] eventsActifs = System.Array.FindAll(evenementsDisponibles, evt => evt != null);
 
         if (eventsActifs.Length == 0)
@@ -86,8 +89,49 @@ public class EventManager : MonoBehaviour
             return;
         }
 
-        // choisir aleatoire
-        GameObject eventChoisi = eventsActifs[Random.Range(0, eventsActifs.Length)];
+        // si tous utilises, reset
+        bool tousUtilises = true;
+        for (int i = 0; i < evenementsDisponibles.Length; i++)
+        {
+            if (evenementsDisponibles[i] != null && !evenementsUtilises[i])
+            {
+                tousUtilises = false;
+                break;
+            }
+        }
+
+        if (tousUtilises)
+        {
+            for (int i = 0; i < evenementsUtilises.Length; i++)
+            {
+                evenementsUtilises[i] = false;
+            }
+            Debug.Log("EVENT MANAGER : cycle complet, reset disponibilite");
+        }
+
+        // choisir event non utilise
+        GameObject eventChoisi = null;
+        int tentatives = 0;
+
+        while (eventChoisi == null && tentatives < 50)
+        {
+            int indexAleatoire = Random.Range(0, evenementsDisponibles.Length);
+
+            if (evenementsDisponibles[indexAleatoire] != null && !evenementsUtilises[indexAleatoire])
+            {
+                eventChoisi = evenementsDisponibles[indexAleatoire];
+                evenementsUtilises[indexAleatoire] = true;
+                dernierEvenement = eventChoisi;
+            }
+
+            tentatives++;
+        }
+
+        if (eventChoisi == null)
+        {
+            Debug.LogWarning("EVENT MANAGER : impossible de trouver event disponible");
+            return;
+        }
 
         evenementEnCours = true;
         eventChoisi.SetActive(true);

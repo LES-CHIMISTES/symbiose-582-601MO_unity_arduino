@@ -64,21 +64,50 @@ public class OSCInputManager : MonoBehaviour
             stationEauFeedback.UpdateNiveauEau(niveau);
         }
 
-        //Debug.Log("ACCEL X = " + value);
+        // AJOUTER CECI
+        GameObject evapObj = GameObject.Find("EventEvaporation");
+        if (evapObj != null && evapObj.activeSelf)
+        {
+            EventEvaporation eventEvap = evapObj.GetComponent<EventEvaporation>();
+            if (eventEvap != null)
+            {
+                eventEvap.UpdateAccel(accelX, accelY, accelZ);
+            }
+        }
     }
 
     void AccelY(OSCMessage message)
     {
         float value = message.Values[0].FloatValue;
         accelY = value;
-        //Debug.Log("ACCEL Y = " + value);
+
+        // AJOUTER CECI
+        GameObject evapObj = GameObject.Find("EventEvaporation");
+        if (evapObj != null && evapObj.activeSelf)
+        {
+            EventEvaporation eventEvap = evapObj.GetComponent<EventEvaporation>();
+            if (eventEvap != null)
+            {
+                eventEvap.UpdateAccel(accelX, accelY, accelZ);
+            }
+        }
     }
 
     void AccelZ(OSCMessage message)
     {
         float value = message.Values[0].FloatValue;
         accelZ = value;
-        //Debug.Log("ACCEL Z = " + value);
+
+        // AJOUTER CECI
+        GameObject evapObj = GameObject.Find("EventEvaporation");
+        if (evapObj != null && evapObj.activeSelf)
+        {
+            EventEvaporation eventEvap = evapObj.GetComponent<EventEvaporation>();
+            if (eventEvap != null)
+            {
+                eventEvap.UpdateAccel(accelX, accelY, accelZ);
+            }
+        }
     }
 
     void GyroX(OSCMessage message)

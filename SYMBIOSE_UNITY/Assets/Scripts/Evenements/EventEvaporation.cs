@@ -148,7 +148,7 @@ public class EventEvaporation : MonoBehaviour
     void Update()
     {
         if (phaseActuelle != PhaseEvaporation.EnCours) return;
-
+        Debug.Log($"EVAP Update : intensite={intensiteActuelle:F2}, progression={progression:F2}");
         chronoTotal += Time.deltaTime;
 
         if (chronoTotal >= tempsMaxAvantEchec)
@@ -255,14 +255,17 @@ public class EventEvaporation : MonoBehaviour
 
     public void UpdateAccel(float accelX, float accelY, float accelZ)
     {
-        // calculer magnitude du changement
+        // DEBUG
+        Debug.Log($"EVAP : accel recu X={accelX:F2} Y={accelY:F2} Z={accelZ:F2}");
+
         float deltaX = Mathf.Abs(accelX - dernierAccelX);
         float deltaY = Mathf.Abs(accelY - dernierAccelY);
         float deltaZ = Mathf.Abs(accelZ - dernierAccelZ);
 
         float magnitudeChangement = Mathf.Sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
 
-        // smooth l'intensite
+        Debug.Log($"EVAP : magnitude={magnitudeChangement:F2}, intensite={intensiteActuelle:F2}");
+
         intensiteActuelle = Mathf.Lerp(intensiteActuelle, magnitudeChangement * 10f, 0.3f);
 
         dernierAccelX = accelX;
