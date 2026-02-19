@@ -31,6 +31,10 @@ public class OSCInputManager : MonoBehaviour
 
     public EventEvaporation eventEvaporation;
 
+    public EventCristallisation eventCristallisation;
+
+    private float progressionAffichee = 0f;
+
     void Start()
     {
         oscReceiver.Bind("/accelX", AccelX);
@@ -219,104 +223,118 @@ public class OSCInputManager : MonoBehaviour
         dernierFaderY = value;
     }
     void Key1(OSCMessage message)
-
-{
+    {
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
         if (tutorialManager != null && !tutorialManager.EstStationActive("poudres")) return;
         int value = message.Values[0].IntValue;
 
-    if (value == 1)
-    {
-        if (meshEauController != null)
+        if (value == 1)
         {
-            meshEauController.SetCouleur(1);
-        }
-        
-        
-        if (stationPoudresFeedback != null)
-        {
-            stationPoudresFeedback.AppuyerBouton(1); 
-        }
-        
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.JouerKeyPress();
-        }
+            if (meshEauController != null)
+            {
+                meshEauController.SetCouleur(1);
+            }
 
-    }
+            if (eventCristallisation != null && eventCristallisation.gameObject.activeSelf)
+            {
+                eventCristallisation.AppuyerBouton(1);
+            }
+            else
+            {
+                if (stationPoudresFeedback != null)
+                {
+                    stationPoudresFeedback.AppuyerBouton(1);
+                }
+            }
 
-        else if (value == 0) // RELÂCHÉ - AJOUTER CETTE SECTION
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.JouerKeyPress();
+            }
+        }
+        else if (value == 0)
         {
             if (stationPoudresFeedback != null)
             {
-                stationPoudresFeedback.RelacherBouton(1); // NOUVELLE FONCTION
+                stationPoudresFeedback.RelacherBouton(1);
             }
         }
     }
 
-void Key2(OSCMessage message)
-{
+    void Key2(OSCMessage message)
+    {
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
         if (tutorialManager != null && !tutorialManager.EstStationActive("poudres")) return;
         int value = message.Values[0].IntValue;
 
-    if (value == 1)
-    {
-        if (meshEauController != null)
+        if (value == 1)
         {
-            meshEauController.SetCouleur(2);
+            if (meshEauController != null)
+            {
+                meshEauController.SetCouleur(2);
+            }
+
+            if (eventCristallisation != null && eventCristallisation.gameObject.activeSelf)
+            {
+                eventCristallisation.AppuyerBouton(2);
+            }
+            else
+            {
+                if (stationPoudresFeedback != null)
+                {
+                    stationPoudresFeedback.AppuyerBouton(2);
+                }
+            }
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.JouerKeyPress();
+            }
         }
-        
-        
-        if (stationPoudresFeedback != null)
-        {
-            stationPoudresFeedback.AppuyerBouton(2);
-        }
-        
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.JouerKeyPress();
-        }
-    }
-        else if (value == 0) // RELÂCHÉ - AJOUTER CETTE SECTION
+        else if (value == 0)
         {
             if (stationPoudresFeedback != null)
             {
-                stationPoudresFeedback.RelacherBouton(2); // NOUVELLE FONCTION
+                stationPoudresFeedback.RelacherBouton(2);
             }
         }
     }
 
-void Key3(OSCMessage message)
-{
+    void Key3(OSCMessage message)
+    {
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
         if (tutorialManager != null && !tutorialManager.EstStationActive("poudres")) return;
         int value = message.Values[0].IntValue;
 
-    if (value == 1)
-    {
-        if (meshEauController != null)
+        if (value == 1)
         {
-            meshEauController.SetCouleur(3);
-        }
-        
-        
-        if (stationPoudresFeedback != null)
-        {
-            stationPoudresFeedback.AppuyerBouton(3);
-        }
-        
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.JouerKeyPress();
-        }
-    }
+            if (meshEauController != null)
+            {
+                meshEauController.SetCouleur(3);
+            }
 
-        else if (value == 0) // RELÂCHÉ - AJOUTER CETTE SECTION
+            if (eventCristallisation != null && eventCristallisation.gameObject.activeSelf)
+            {
+                eventCristallisation.AppuyerBouton(3);
+            }
+            else
+            {
+                if (stationPoudresFeedback != null)
+                {
+                    stationPoudresFeedback.AppuyerBouton(3);
+                }
+            }
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.JouerKeyPress();
+            }
+        }
+        else if (value == 0)
         {
             if (stationPoudresFeedback != null)
             {
-                stationPoudresFeedback.RelacherBouton(3); // NOUVELLE FONCTION
+                stationPoudresFeedback.RelacherBouton(3);
             }
         }
     }

@@ -1,40 +1,62 @@
 using UnityEngine;
 using UnityEngine.UI;
 using extOSC;
+using System.Collections;
 
 public class StationPoudresFeedback : MonoBehaviour
 {
     public OSCTransmitter oscTransmitter;
 
     [Header("UI")]
-    public Image cercleCouleur; // cercle qui change de couleur
+    public Image cercleCouleur;
+    public Image overlayRouge;
 
-    [Header("Couleurs - ORDRE IMPORTANT")]
-    public Color couleurVerte = new Color(0f, 1f, 0f);   // Key 1
-    public Color couleurBleue = new Color(0f, 0f, 1f);   // Key 2
-    public Color couleurBlanche = Color.white;           // Key 3
+    [Header("Couleurs")]
+    public Color couleurVerte = new Color(0f, 1f, 0f);
+    public Color couleurBleue = new Color(0f, 0f, 1f);
+    public Color couleurBlanche = Color.white;
 
     [Header("Params")]
-    public float delaiAvantFade = 1f; // délai avant que le fade commence
-    public float dureeFade = 3f; // durée du fade out
+    public float delaiAvantFade = 1f;
+    public float dureeFade = 3f;
 
-    [Header("Stabilité")]
+    [Header("Animation")]
+    public float dureeScaleOut = 0.3f;
+    public float scaleOutMax = 1.5f;
+    public float dureeTeintRouge = 0.5f;
+
+    [Header("Stabilite")]
     public float perteStabiliteHorsEquilibre = 5f;
 
-    private int couleurAttendue = 1; // 1=vert, 2=bleu, 3=blanc
+    private int couleurAttendue = 1;
     private float chronoTotal = 0f;
-    private float tempsTotalMax; // delai + duree
-
-    private bool bonBoutonAppuyeRecemment = false; // flag pour tutoriel
+    private float tempsTotalMax;
+    private bool bonBoutonAppuyeRecemment = false;
+    private bool enAnimation = false;
+    private Vector3 scaleInitialCercle;
+    private Coroutine animationEnCours = null;
 
     void Start()
     {
         tempsTotalMax = delaiAvantFade + dureeFade;
+
+        if (cercleCouleur != null)
+        {
+            scaleInitialCercle = cercleCouleur.rectTransform.localScale;
+        }
+
+        if (overlayRouge != null)
+        {
+            overlayRouge.gameObject.SetActive(false);
+        }
+
         ChangerCouleur();
     }
 
     void Update()
     {
+        if (enAnimation) return;
+
         chronoTotal += Time.deltaTime;
 
         if (cercleCouleur != null && chronoTotal >= delaiAvantFade)
@@ -49,62 +71,162 @@ public class StationPoudresFeedback : MonoBehaviour
 
         if (chronoTotal >= tempsTotalMax)
         {
-            Debug.LogWarning("POUDRES : timeout échec");
-            ChangerCouleur();
+            Debug.LogWarning("POUDRES : timeout echec");
             bonBoutonAppuyeRecemment = false;
+            ChangerCouleur();
         }
 
-        // perte stabilité en phase principale
         if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
         {
             if (!EstEnEquilibre() && StabilityManager.Instance != null)
             {
-                StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "poudres hors équilibre");
+                StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "poudres hors equilibre");
             }
         }
     }
 
-    // appelé par OSCInputManager ou DebugInputSimulator quand key appuyée
     public void AppuyerBouton(int keyNumber)
     {
-        Debug.Log($"POUDRES : bouton {keyNumber} appuyé, attendu = {couleurAttendue}");
+        Debug.Log($"POUDRES : bouton {keyNumber} appuye, attendu = {couleurAttendue}");
 
         EnvoyerOSCKey(keyNumber, true);
 
+        // ignorer si animation en cours
+        if (enAnimation) return;
+
         if (keyNumber == couleurAttendue)
         {
-            Debug.Log("POUDRES : ✓ bon bouton");
+            Debug.Log("POUDRES : bon bouton");
             bonBoutonAppuyeRecemment = true;
-
-            // attendre 2 secondes avant de changer (laisse temps au tutoriel de valider)
-            Invoke(nameof(ChangerCouleurApresDelai), 2f);
+            LancerAnimation(AnimationReussite());
         }
         else
         {
-            Debug.LogWarning($"POUDRES : mauvais bouton, attendu = {couleurAttendue}, reçu = {keyNumber}");
+            Debug.LogWarning($"POUDRES : mauvais bouton, attendu = {couleurAttendue}, recu = {keyNumber}");
             bonBoutonAppuyeRecemment = false;
+            LancerAnimation(AnimationEchec());
         }
     }
 
     public void RelacherBouton(int keyNumber)
     {
-        Debug.Log($"POUDRES : Bouton {keyNumber} relâché");
-
-        // ENVOYER OSC RELÂCHEMENT (0)
+        Debug.Log($"POUDRES : Bouton {keyNumber} relache");
         EnvoyerOSCKey(keyNumber, false);
     }
 
-    void ChangerCouleurApresDelai()
+    void LancerAnimation(IEnumerator animation)
     {
+        // arreter toute animation precedente proprement
+        if (animationEnCours != null)
+        {
+            StopCoroutine(animationEnCours);
+        }
+
+        // reset etat visuel
+        ResetVisuels();
+
+        enAnimation = true;
+        animationEnCours = StartCoroutine(animation);
+    }
+
+    void ResetVisuels()
+    {
+        if (cercleCouleur != null)
+        {
+            cercleCouleur.rectTransform.localScale = scaleInitialCercle;
+        }
+
+        if (overlayRouge != null)
+        {
+            overlayRouge.gameObject.SetActive(false);
+        }
+    }
+
+    IEnumerator AnimationReussite()
+    {
+        if (cercleCouleur == null) yield break;
+
+        float elapsed = 0f;
+
+        while (elapsed < dureeScaleOut)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / dureeScaleOut;
+
+            float scale = Mathf.Lerp(1f, scaleOutMax, t);
+            cercleCouleur.rectTransform.localScale = scaleInitialCercle * scale;
+
+            Color c = cercleCouleur.color;
+            c.a = 1f - t;
+            cercleCouleur.color = c;
+
+            yield return null;
+        }
+
+        TerminerAnimation();
+    }
+
+    IEnumerator AnimationEchec()
+    {
+        if (cercleCouleur == null) yield break;
+
+        // afficher overlay rouge
+        if (overlayRouge != null)
+        {
+            overlayRouge.gameObject.SetActive(true);
+            Color r = overlayRouge.color;
+            r.a = 1f;
+            overlayRouge.color = r;
+        }
+
+        yield return new WaitForSeconds(dureeTeintRouge);
+
+        // fade out les deux
+        float elapsed = 0f;
+        float dureeFadeEchec = 0.3f;
+        float alphaDepart = cercleCouleur.color.a;
+
+        while (elapsed < dureeFadeEchec)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / dureeFadeEchec;
+
+            Color c = cercleCouleur.color;
+            c.a = Mathf.Lerp(alphaDepart, 0f, t);
+            cercleCouleur.color = c;
+
+            if (overlayRouge != null)
+            {
+                Color r = overlayRouge.color;
+                r.a = Mathf.Lerp(1f, 0f, t);
+                overlayRouge.color = r;
+            }
+
+            yield return null;
+        }
+
+        TerminerAnimation();
+    }
+
+    void TerminerAnimation()
+    {
+        ResetVisuels();
+        enAnimation = false;
+        animationEnCours = null;
         ChangerCouleur();
     }
 
     void ChangerCouleur()
     {
+        enAnimation = false;
+        animationEnCours = null;
+
         couleurAttendue = Random.Range(1, 4);
 
         if (cercleCouleur != null)
         {
+            cercleCouleur.rectTransform.localScale = scaleInitialCercle;
+
             Color nouvelleCouleur;
             switch (couleurAttendue)
             {
@@ -118,6 +240,11 @@ public class StationPoudresFeedback : MonoBehaviour
             cercleCouleur.color = nouvelleCouleur;
         }
 
+        if (overlayRouge != null)
+        {
+            overlayRouge.gameObject.SetActive(false);
+        }
+
         chronoTotal = 0f;
 
         Debug.Log($"POUDRES : nouvelle couleur = {couleurAttendue}");
@@ -126,12 +253,6 @@ public class StationPoudresFeedback : MonoBehaviour
     public bool EstEnEquilibre()
     {
         bool equilibre = bonBoutonAppuyeRecemment && chronoTotal < tempsTotalMax;
-
-        if (equilibre && Time.frameCount % 60 == 0)
-        {
-            Debug.Log($"POUDRES équilibre: flag={bonBoutonAppuyeRecemment}, chrono={chronoTotal:F2}/{tempsTotalMax}");
-        }
-
         return equilibre;
     }
 
@@ -149,7 +270,5 @@ public class StationPoudresFeedback : MonoBehaviour
         var message = new OSCMessage(adresse);
         message.AddValue(OSCValue.Int(valeur));
         oscTransmitter.Send(message);
-
-        Debug.Log($"OSC : Key{keyNumber} = {valeur} ({(appuye ? "APPUYÉ" : "RELÂCHÉ")}) envoyé à {adresse}");
     }
 }

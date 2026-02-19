@@ -48,6 +48,7 @@ public class EventEvaporation : MonoBehaviour
     public float smoothMontee = 0.15f;
     public float smoothDescente = 0.08f;
     public float decroissanceParSeconde = 2f;
+    public float seuilMouvementMinimum = 0.25f;
 
     [Header("difficulte progressive")]
     public float seuilMinDebutant = 0.2f;
@@ -441,6 +442,9 @@ public class EventEvaporation : MonoBehaviour
         float deltaZ = Mathf.Abs(accelZ - dernierAccelZ);
 
         float magnitudeChangement = Mathf.Sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+
+        // ignorer le bruit et micro-mouvements
+        if (magnitudeChangement < seuilMouvementMinimum) return;
 
         // appliquer multiplicateur et garder la valeur haute
         float nouvelleIntensite = magnitudeChangement * multiplicateurMagnitude;
