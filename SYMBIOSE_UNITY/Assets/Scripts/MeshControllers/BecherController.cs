@@ -20,17 +20,16 @@ public class BecherController : MonoBehaviour
         baseRotation = Quaternion.Euler(baseRotationEuler);
     }
 
-    public void UpdateRotationZ(float valeurFaderX)
+    public void UpdateRotation(int faderX, int faderY)
     {
-        float normalized = valeurFaderX / 4096f;
-        currentRotationZ = Mathf.Lerp(rotationMinZ, rotationMaxZ, normalized);
-        ApplyRotation();
-    }
+        float rawX = (faderX - 512f) / 512f;
+        float rawY = (faderY - 512f) / 512f;
 
-    public void UpdateRotationY(float valeurFaderY)
-    {
-        float normalized = valeurFaderY / 4096f;
-        currentRotationY = Mathf.Lerp(rotationMinY, rotationMaxY, normalized);
+        float correctedX = -rawX;
+        float correctedY = -rawY;
+
+        currentRotationZ = Mathf.Lerp(rotationMinZ, rotationMaxZ, (correctedX + 1f) / 2f);
+        currentRotationY = Mathf.Lerp(rotationMinY, rotationMaxY, (correctedY + 1f) / 2f);
         ApplyRotation();
     }
 

@@ -144,16 +144,17 @@ public class StationTourbillonFeedback : MonoBehaviour
 
     public void UpdateJoystick(int faderX, int faderY)
     {
-        // convertir faderX/Y (0-4096) en position (-1 à 1)
-        float normalizedX = (faderX - 2048f) / 2048f;
-        float normalizedY = (faderY - 2048f) / 2048f;
+        float rawX = (faderX - 512f) / 512f;
+        float rawY = (faderY - 512f) / 512f;
 
-        // calculer angle
+        // inverser les deux axes
+        float normalizedX = -rawX;
+        float normalizedY = -rawY;
+
         angleJoystickActuel = Mathf.Atan2(normalizedY, normalizedX) * Mathf.Rad2Deg;
         angleJoystickActuel = (angleJoystickActuel + 90f) % 360f;
         if (angleJoystickActuel < 0) angleJoystickActuel += 360f;
 
-        // update position du petit cercle
         if (petitCercle != null)
         {
             float posX = normalizedX * rayonGrandCercle;

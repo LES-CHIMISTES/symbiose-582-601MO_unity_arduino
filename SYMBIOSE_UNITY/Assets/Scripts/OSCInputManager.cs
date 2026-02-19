@@ -7,7 +7,7 @@ public class OSCInputManager : MonoBehaviour
     public OSCReceiver oscReceiver;
     public OSCTransmitter oscTransmitter;
 
-    [Header("Contr�leurs")]
+    [Header("Contr leurs")]
     public MeshEauController meshEauController;
     public MeshFeuController meshFeuController;
     public BecherController becherController;
@@ -17,7 +17,7 @@ public class OSCInputManager : MonoBehaviour
     // Variables pour stocker les valeurs OSC
     private float accelX, accelY, accelZ;
     private int currentKey = 0; // 0 = aucune, 1 = key1, 2 = key2, 3 = key3
-    private int dernierFaderX = -1; // -1 = pas encore initialis�
+    private int dernierFaderX = -1; // -1 = pas encore initialis 
     private int dernierFaderY = -1;
     private float seuilChangementFader = 75f; // changement minimum pour jouer le son
 
@@ -49,6 +49,7 @@ public class OSCInputManager : MonoBehaviour
 
     void AccelX(OSCMessage message)
     {
+
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
         if (tutorialManager != null && !tutorialManager.EstStationActive("eau")) return;
 
@@ -157,23 +158,21 @@ public class OSCInputManager : MonoBehaviour
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
         if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon")) return;
 
-        int value = (int)message.Values[0].FloatValue;
+        int value = message.Values[0].IntValue;
 
-
-        // update � jour la rotation Z du b�cher
         if (becherController != null)
         {
-            becherController.UpdateRotationZ(value);
+            int faderY = dernierFaderY != -1 ? dernierFaderY : 512;
+            becherController.UpdateRotation(value, faderY);
         }
 
         if (stationTourbillonFeedback != null)
         {
-            int faderY = dernierFaderY != -1 ? dernierFaderY : 2048;
+            int faderY = dernierFaderY != -1 ? dernierFaderY : 512;
             stationTourbillonFeedback.UpdateJoystick(value, faderY);
         }
 
-        // joue son seulement si changement significatif
-        if (dernierFaderX != -1) // if pas la premi�re lecture
+        if (dernierFaderX != -1)
         {
             int changement = Mathf.Abs(value - dernierFaderX);
             if (changement >= seuilChangementFader)
@@ -185,8 +184,6 @@ public class OSCInputManager : MonoBehaviour
             }
         }
         dernierFaderX = value;
-
-        //Debug.Log("FADER X = " + value);
     }
 
     void FaderY(OSCMessage message)
@@ -194,22 +191,21 @@ public class OSCInputManager : MonoBehaviour
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
         if (tutorialManager != null && !tutorialManager.EstStationActive("tourbillon")) return;
 
-        int value = (int)message.Values[0].FloatValue;
+        int value = message.Values[0].IntValue;
 
-        // update � jour la rotation Y du b�cher
         if (becherController != null)
         {
-            becherController.UpdateRotationY(value);
+            int faderX = dernierFaderX != -1 ? dernierFaderX : 512;
+            becherController.UpdateRotation(faderX, value);
         }
 
         if (stationTourbillonFeedback != null)
         {
-            int faderX = dernierFaderX != -1 ? dernierFaderX : 2048;
+            int faderX = dernierFaderX != -1 ? dernierFaderX : 512;
             stationTourbillonFeedback.UpdateJoystick(faderX, value);
         }
 
-        // joue son seulement si changement significatif
-        if (dernierFaderY != -1) // if pas la premi�re lecture
+        if (dernierFaderY != -1)
         {
             int changement = Mathf.Abs(value - dernierFaderY);
             if (changement >= seuilChangementFader)
@@ -221,10 +217,7 @@ public class OSCInputManager : MonoBehaviour
             }
         }
         dernierFaderY = value;
-
-        //Debug.Log("FADER Y = " + value);
     }
-
     void Key1(OSCMessage message)
 
 {
