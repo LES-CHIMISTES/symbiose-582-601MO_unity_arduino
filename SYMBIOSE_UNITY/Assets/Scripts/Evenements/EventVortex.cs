@@ -178,6 +178,11 @@ public class EventVortex : MonoBehaviour
             StartCoroutine(FadeTexte());
         }
 
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEventVortex();
+        }
+
         // initialiser jauge
         if (jaugeProgression != null)
         {
@@ -488,6 +493,10 @@ public class EventVortex : MonoBehaviour
     void ResoudreEvenement()
     {
         phaseActuelle = PhaseVortex.Resolu;
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEventReussi();
+        }
         StartCoroutine(FlashReussiteCoroutine());
         DesactiverEffets();
 
@@ -495,7 +504,10 @@ public class EventVortex : MonoBehaviour
         {
             gameManager.EvenementResolu();
         }
-
+        if (StabilityManager.Instance != null)
+        {
+            StabilityManager.Instance.BonusEvenement();
+        }
         if (EventManager.Instance != null)
         {
             EventManager.Instance.EvenementTermine();

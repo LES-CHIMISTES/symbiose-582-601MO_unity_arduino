@@ -68,12 +68,12 @@ public class GameOverUI : MonoBehaviour
 
             if (texteTemps != null)
             {
-                texteTemps.text = $"temps de survie : {temps}";
+                texteTemps.text = $"Temps de survie : {temps}";
             }
 
             if (texteMessage != null)
             {
-                texteMessage.text = $"événements résolus : {evenements}";
+                texteMessage.text = $"Événements résolus : {evenements}";
             }
         }
 

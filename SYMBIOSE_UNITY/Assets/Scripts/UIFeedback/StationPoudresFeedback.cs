@@ -84,14 +84,6 @@ public class StationPoudresFeedback : MonoBehaviour
             bonBoutonAppuyeRecemment = false;
             ChangerCouleur();
         }
-
-        if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
-        {
-            if (!EstEnEquilibre() && StabilityManager.Instance != null)
-            {
-                StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "poudres hors equilibre");
-            }
-        }
     }
 
     public void AppuyerBouton(int keyNumber)

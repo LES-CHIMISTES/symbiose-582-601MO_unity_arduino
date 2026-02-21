@@ -146,6 +146,11 @@ public class TutorialManager : MonoBehaviour
             tutorialUI.CompleterEtape((int)etape);
         }
 
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEtapeTutoriel();
+        }
+
         Debug.Log($"TUTORIEL : ✓ Étape {(int)etape + 1}/4 complétée !");
 
         // Passer à l'étape suivante après un court délai

@@ -150,14 +150,6 @@ public class StationTourbillonFeedback : MonoBehaviour
 
         // sauvegarder angle précédent
         angleJoystickPrecedent = angleJoystickActuel;
-
-        if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
-        {
-            if (!EstEnEquilibre() && StabilityManager.Instance != null)
-            {
-                StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "Tourbillon hors équilibre");
-            }
-        }
     }
 
     public void UpdateJoystick(int faderX, int faderY)

@@ -171,6 +171,11 @@ public class EventCristallisation : MonoBehaviour
             StartCoroutine(FadeTexte());
         }
 
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEventCristallisation();
+        }
+
         // initialiser jauge
         if (jaugeProgression != null)
         {
@@ -370,7 +375,10 @@ public class EventCristallisation : MonoBehaviour
             int keyDuCercle = IndexToKeyNumber(indexActuel);
             fluxPoudre.ChangerCouleur(keyDuCercle);
         }
-
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerCristallisationBonTiming();
+        }
         StartCoroutine(AnimationReussiteStep());
     }
 
@@ -610,6 +618,10 @@ public class EventCristallisation : MonoBehaviour
     void ResoudreEvenement()
     {
         phaseActuelle = PhaseCristallisation.Resolu;
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEventReussi();
+        }
         StartCoroutine(FlashReussiteCoroutine());
         DesactiverEffets();
 
@@ -617,7 +629,10 @@ public class EventCristallisation : MonoBehaviour
         {
             gameManager.EvenementResolu();
         }
-
+        if (StabilityManager.Instance != null)
+        {
+            StabilityManager.Instance.BonusEvenement();
+        }
         if (EventManager.Instance != null)
         {
             EventManager.Instance.EvenementTermine();

@@ -534,6 +534,11 @@ public class EventGel : MonoBehaviour
 
         Debug.Log($"EVENT GEL : etape {etapeActuelle + 1}/{nbKnobsTotal} validee");
 
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEtapeGel();
+        }
+
         if (fadeEnCours != null)
         {
             StopCoroutine(fadeEnCours);
@@ -644,6 +649,10 @@ public class EventGel : MonoBehaviour
     void ResoudreEvenement()
     {
         phaseActuelle = PhaseGel.Resolu;
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEventReussi();
+        }
         StartCoroutine(FlashReussiteCoroutine());
         DesactiverEffets();
 
@@ -651,7 +660,10 @@ public class EventGel : MonoBehaviour
         {
             gameManager.EvenementResolu();
         }
-
+        if (StabilityManager.Instance != null)
+        {
+            StabilityManager.Instance.BonusEvenement();
+        }
         if (EventManager.Instance != null)
         {
             EventManager.Instance.EvenementTermine();

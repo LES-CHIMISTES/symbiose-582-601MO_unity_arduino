@@ -15,6 +15,7 @@ public class EventEvaporation : MonoBehaviour
     [Header("panel principal")]
     public GameObject eventEvaporationPanel;
 
+
     [Header("ui texte")]
     public TextMeshProUGUI texteAlert;
     public float dureeAffichageTexte = 3f;
@@ -143,6 +144,8 @@ public class EventEvaporation : MonoBehaviour
     private float metreHauteur = 0f;
     private float metrePosYBas = 0f;
 
+    private bool etaitDansZoneOptimale = false;
+
     // =====================================================================
     // INITIALISATION
     // =====================================================================
@@ -160,7 +163,7 @@ public class EventEvaporation : MonoBehaviour
         intensiteActuelle = 0f;
         intensiteCible = 0f;
         accelInitialise = false;
-
+        etaitDansZoneOptimale = false;
         // ajuster difficulte selon temps de jeu
         if (GameManager.Instance != null)
         {
@@ -178,6 +181,11 @@ public class EventEvaporation : MonoBehaviour
         if (eventEvaporationPanel != null)
         {
             eventEvaporationPanel.SetActive(true);
+        }
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEventEvaporation();
         }
 
         if (volumePostProcess != null && volumePostProcess.profile.TryGet(out colorAdjustments))
@@ -272,7 +280,17 @@ public class EventEvaporation : MonoBehaviour
             // trop fort : penalite (recul)
             progression -= penaliteTropFort * Time.deltaTime;
         }
+        bool dansZoneOptimale = intensiteActuelle >= seuilIntensiteMin && intensiteActuelle <= seuilIntensiteMax;
 
+        if (dansZoneOptimale && !etaitDansZoneOptimale)
+        {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.JouerZoneOptimale();
+            }
+        }
+
+        etaitDansZoneOptimale = dansZoneOptimale;
         progression = Mathf.Clamp01(progression);
 
         // jauge UI
@@ -516,6 +534,10 @@ public class EventEvaporation : MonoBehaviour
     void ResoudreEvenement()
     {
         phaseActuelle = PhaseEvaporation.Resolu;
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEventReussi();
+        }
         StartCoroutine(FlashReussiteCoroutine());
         DesactiverEffets();
 
@@ -523,7 +545,10 @@ public class EventEvaporation : MonoBehaviour
         {
             gameManager.EvenementResolu();
         }
-
+        if (StabilityManager.Instance != null)
+        {
+            StabilityManager.Instance.BonusEvenement();
+        }
         if (EventManager.Instance != null)
         {
             EventManager.Instance.EvenementTermine();
