@@ -33,6 +33,8 @@ public class OSCInputManager : MonoBehaviour
 
     public EventCristallisation eventCristallisation;
 
+    public EventVortex eventVortex;
+
     private float progressionAffichee = 0f;
 
     void Start()
@@ -164,16 +166,23 @@ public class OSCInputManager : MonoBehaviour
 
         int value = message.Values[0].IntValue;
 
-        if (becherController != null)
-        {
-            int faderY = dernierFaderY != -1 ? dernierFaderY : 512;
-            becherController.UpdateRotation(value, faderY);
-        }
+        int faderY = dernierFaderY != -1 ? dernierFaderY : 512;
 
-        if (stationTourbillonFeedback != null)
+        if (eventVortex != null && eventVortex.gameObject.activeSelf)
         {
-            int faderY = dernierFaderY != -1 ? dernierFaderY : 512;
-            stationTourbillonFeedback.UpdateJoystick(value, faderY);
+            eventVortex.UpdateJoystick(value, faderY);
+        }
+        else
+        {
+            if (becherController != null)
+            {
+                becherController.UpdateRotation(value, faderY);
+            }
+
+            if (stationTourbillonFeedback != null)
+            {
+                stationTourbillonFeedback.UpdateJoystick(value, faderY);
+            }
         }
 
         if (dernierFaderX != -1)
@@ -197,16 +206,23 @@ public class OSCInputManager : MonoBehaviour
 
         int value = message.Values[0].IntValue;
 
-        if (becherController != null)
-        {
-            int faderX = dernierFaderX != -1 ? dernierFaderX : 512;
-            becherController.UpdateRotation(faderX, value);
-        }
+        int faderX = dernierFaderX != -1 ? dernierFaderX : 512;
 
-        if (stationTourbillonFeedback != null)
+        if (eventVortex != null && eventVortex.gameObject.activeSelf)
         {
-            int faderX = dernierFaderX != -1 ? dernierFaderX : 512;
-            stationTourbillonFeedback.UpdateJoystick(faderX, value);
+            eventVortex.UpdateJoystick(faderX, value);
+        }
+        else
+        {
+            if (becherController != null)
+            {
+                becherController.UpdateRotation(faderX, value);
+            }
+
+            if (stationTourbillonFeedback != null)
+            {
+                stationTourbillonFeedback.UpdateJoystick(faderX, value);
+            }
         }
 
         if (dernierFaderY != -1)

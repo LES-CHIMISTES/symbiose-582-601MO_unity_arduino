@@ -15,6 +15,14 @@ public class EventEvaporation : MonoBehaviour
     [Header("panel principal")]
     public GameObject eventEvaporationPanel;
 
+    [Header("ui texte")]
+    public TextMeshProUGUI texteAlert;
+    public float dureeAffichageTexte = 3f;
+
+    [Header("flash reussite")]
+    public Image flashReussite;   // image plein ecran verte
+    public float dureeFlashReussite = 0.4f;
+
     [Header("metre d'intensite vertical")]
     public RectTransform metreConteneur;        // le conteneur vertical complet
     public Image zoneTropFaible;                // section basse (bleu sombre)
@@ -54,6 +62,10 @@ public class EventEvaporation : MonoBehaviour
     public float seuilMinDebutant = 0.2f;
     public float seuilMinExpert = 0.8f;
     public float tempsSeuilDifficulte = 180f;
+
+    [Header("difficulte progressive evenement")]
+    public float seuilMaxInitial = 3f;
+    public float seuilMaxFinal = 2f;
 
     // =====================================================================
     // PARAMETRES VISUELS
@@ -154,6 +166,12 @@ public class EventEvaporation : MonoBehaviour
         {
             float progressionDifficulte = Mathf.Clamp01(GameManager.Instance.tempsEcoule / tempsSeuilDifficulte);
             seuilIntensiteMin = Mathf.Lerp(seuilMinDebutant, seuilMinExpert, progressionDifficulte);
+        }
+
+        if (GameManager.Instance != null)
+        {
+            float d = GameManager.Instance.GetProgressionDifficulte();
+            seuilIntensiteMax = Mathf.Lerp(seuilMaxInitial, seuilMaxFinal, d);
         }
 
         // activer panel
@@ -397,7 +415,10 @@ public class EventEvaporation : MonoBehaviour
 
     void UpdateJaugeProgression()
     {
-        if (fillJauge == null) return;
+        if (fillJauge != null)
+        {
+            fillJauge.color = new Color(0.533f, 0.839f, 1f, 1f);
+        }
 
         bool enProgression = intensiteActuelle >= seuilIntensiteMin && intensiteActuelle <= seuilIntensiteMax;
 
@@ -495,7 +516,7 @@ public class EventEvaporation : MonoBehaviour
     void ResoudreEvenement()
     {
         phaseActuelle = PhaseEvaporation.Resolu;
-
+        StartCoroutine(FlashReussiteCoroutine());
         DesactiverEffets();
 
         if (gameManager != null)
@@ -580,6 +601,43 @@ public class EventEvaporation : MonoBehaviour
         EnvoyerOSCLumiere(false);
     }
 
+    IEnumerator FadeTexte()
+    {
+        if (texteAlert == null) yield break;
+        yield return new WaitForSeconds(dureeAffichageTexte);
+        float elapsed = 0f;
+        float duree = 1f;
+        Color c = texteAlert.color;
+        while (elapsed < duree)
+        {
+            elapsed += Time.deltaTime;
+            c.a = 1f - (elapsed / duree);
+            texteAlert.color = c;
+            yield return null;
+        }
+        texteAlert.gameObject.SetActive(false);
+    }
+
+    IEnumerator FlashReussiteCoroutine()
+    {
+        if (flashReussite == null) yield break;
+
+        flashReussite.gameObject.SetActive(true);
+        Color c = flashReussite.color;
+        c.a = 0.25f;
+        flashReussite.color = c;
+
+        float elapsed = 0f;
+        while (elapsed < dureeFlashReussite)
+        {
+            elapsed += Time.deltaTime;
+            c.a = Mathf.Lerp(0.25f, 0f, elapsed / dureeFlashReussite);
+            flashReussite.color = c;
+            yield return null;
+        }
+
+        flashReussite.gameObject.SetActive(false);
+    }
     void EnvoyerOSCLumiere(bool allumer)
     {
         if (oscTransmitter == null) return;

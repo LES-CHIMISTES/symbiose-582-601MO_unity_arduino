@@ -14,6 +14,14 @@ public class GameManager : MonoBehaviour
     [Header("Timer")]
     public float tempsEcoule = 0f;
 
+    [Header("Difficulte")]
+    public float tempsPourDifficulteMax = 180f; // 3 minutes
+
+    public float GetProgressionDifficulte()
+    {
+        return Mathf.Clamp01(tempsEcoule / tempsPourDifficulteMax);
+    }
+
     [Header("Stats événements")]
     public int evenementsResolus = 0;
     public int evenementsEchoues = 0;
@@ -59,17 +67,19 @@ public class GameManager : MonoBehaviour
     public void DemarrerTutoriel()
     {
         phaseActuelle = GamePhase.Tutoriel;
-        timerActif = true;
+        timerActif = false;
         tempsEcoule = 0f;
         OnTutorialStart?.Invoke();
-        Debug.Log("GAME : tutoriel démarré, timer lancé");
+        Debug.Log("GAME : tutoriel demarre");
     }
 
     public void TerminerTutoriel()
     {
+        timerActif = true;
+        tempsEcoule = 0f;
         OnTutorialComplete?.Invoke();
         Invoke(nameof(DemarrerPhasePrincipale), 1f);
-        Debug.Log("GAME : tutoriel terminé");
+        Debug.Log("GAME : tutoriel termine, timer lance");
     }
 
     void DemarrerPhasePrincipale()

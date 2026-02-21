@@ -85,7 +85,7 @@ public class StationEauFeedback : MonoBehaviour
 
         if (Time.frameCount % 60 == 0)
         {
-            Debug.Log($"EAU : Niveau={niveauEauActuel:F3}, Cible={valeurCiblePourComparaison:F3}, Diff={difference:F3}, Tolérance={tolerance}, EnÉquilibre={difference <= tolerance}");
+            //Debug.Log($"EAU : Niveau={niveauEauActuel:F3}, Cible={valeurCiblePourComparaison:F3}, Diff={difference:F3}, Tolérance={tolerance}, EnÉquilibre={difference <= tolerance}");
         }
 
         if (difference <= tolerance)

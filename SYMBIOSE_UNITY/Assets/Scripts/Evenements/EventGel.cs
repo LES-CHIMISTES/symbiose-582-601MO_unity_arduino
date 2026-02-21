@@ -17,6 +17,10 @@ public class EventGel : MonoBehaviour
     public TextMeshProUGUI texteAlert;
     public float dureeAffichageTexte = 3f;
 
+    [Header("flash reussite")]
+    public Image flashReussite;   // image plein ecran verte
+    public float dureeFlashReussite = 0.4f;
+
     [Header("ui pattern")]
     public GameObject patternContainer;
     public RectTransform knobsContainer;
@@ -57,6 +61,12 @@ public class EventGel : MonoBehaviour
     public OSCTransmitter oscTransmitter;
     public MeshEauController meshEau;
     public StationFeuFeedback stationFeu;
+
+    [Header("difficulte progressive evenement")]
+    public float tolerancePatternInitiale = 200f;
+    public float tolerancePatternFinale = 100f;
+    public float tempsMaxParEtapeInitial = 5f;
+    public float tempsMaxParEtapeFinal = 3f;
 
     public CanvasGroup colonneFeu;
 
@@ -114,6 +124,13 @@ public class EventGel : MonoBehaviour
             nbKnobsTotal = nbKnobsMin;
         }
 
+        if (GameManager.Instance != null)
+        {
+            float d = GameManager.Instance.GetProgressionDifficulte();
+            tolerancePattern = Mathf.Lerp(tolerancePatternInitiale, tolerancePatternFinale, d);
+            tempsMaxParEtape = Mathf.Lerp(tempsMaxParEtapeInitial, tempsMaxParEtapeFinal, d);
+        }
+
         GenererPositionsCibles();
 
         if (jaugeTemperature != null)
@@ -146,7 +163,7 @@ public class EventGel : MonoBehaviour
         if (texteAlert != null)
         {
             texteAlert.gameObject.SetActive(true);
-            texteAlert.text = "la potion se gèle...";
+            texteAlert.text = "La potion se gèle... allumez le feu!";
             StartCoroutine(FadeTexte());
         }
 
@@ -627,7 +644,7 @@ public class EventGel : MonoBehaviour
     void ResoudreEvenement()
     {
         phaseActuelle = PhaseGel.Resolu;
-
+        StartCoroutine(FlashReussiteCoroutine());
         DesactiverEffets();
 
         if (gameManager != null)
@@ -760,6 +777,28 @@ public class EventGel : MonoBehaviour
                 if (cercle != null) Destroy(cercle);
             }
         }
+    }
+
+
+    IEnumerator FlashReussiteCoroutine()
+    {
+        if (flashReussite == null) yield break;
+
+        flashReussite.gameObject.SetActive(true);
+        Color c = flashReussite.color;
+        c.a = 0.25f;
+        flashReussite.color = c;
+
+        float elapsed = 0f;
+        while (elapsed < dureeFlashReussite)
+        {
+            elapsed += Time.deltaTime;
+            c.a = Mathf.Lerp(0.25f, 0f, elapsed / dureeFlashReussite);
+            flashReussite.color = c;
+            yield return null;
+        }
+
+        flashReussite.gameObject.SetActive(false);
     }
 
     void EnvoyerOSCLumiere(bool allumer)

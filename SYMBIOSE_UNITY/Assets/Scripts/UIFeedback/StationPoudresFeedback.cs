@@ -16,6 +16,15 @@ public class StationPoudresFeedback : MonoBehaviour
     public Color couleurBleue = new Color(0f, 0f, 1f);
     public Color couleurBlanche = Color.white;
 
+    [Header("Flux poudre")]
+    public FluxPoudreController fluxPoudre;
+
+    [Header("Difficulte progressive")]
+    public float delaiAvantFadeInitial = 1f;
+    public float delaiAvantFadeFinal = 0.3f;
+    public float dureeFadeInitiale = 3f;
+    public float dureeFadeFinale = 1.2f;
+
     [Header("Params")]
     public float delaiAvantFade = 1f;
     public float dureeFade = 3f;
@@ -98,6 +107,23 @@ public class StationPoudresFeedback : MonoBehaviour
         {
             Debug.Log("POUDRES : bon bouton");
             bonBoutonAppuyeRecemment = true;
+
+            // demarrer et changer couleur du flux
+            if (fluxPoudre != null)
+            {
+                if (!fluxPoudre.EstActif())
+                {
+                    fluxPoudre.Demarrer();
+                }
+                fluxPoudre.ChangerCouleur(keyNumber);
+            }
+
+            Debug.Log($"POUDRES : fluxPoudre null = {fluxPoudre == null}");
+            if (fluxPoudre != null)
+            {
+                Debug.Log($"POUDRES : fluxPoudre actif = {fluxPoudre.EstActif()}, gameObject actif = {fluxPoudre.gameObject.activeSelf}");
+            }
+
             LancerAnimation(AnimationReussite());
         }
         else
@@ -220,6 +246,15 @@ public class StationPoudresFeedback : MonoBehaviour
     {
         enAnimation = false;
         animationEnCours = null;
+
+        // ajuster difficulte
+        if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
+        {
+            float d = GameManager.Instance.GetProgressionDifficulte();
+            delaiAvantFade = Mathf.Lerp(delaiAvantFadeInitial, delaiAvantFadeFinal, d);
+            dureeFade = Mathf.Lerp(dureeFadeInitiale, dureeFadeFinale, d);
+            tempsTotalMax = delaiAvantFade + dureeFade;
+        }
 
         couleurAttendue = Random.Range(1, 4);
 
