@@ -10,6 +10,8 @@ public class GameManager : MonoBehaviour
     public UnityEvent OnTutorialComplete;
     public UnityEvent OnMainPhaseStart;
     public UnityEvent OnGameOver;
+    [Header("OSC")]
+    public GameOverUI gameOverUI;
 
     [Header("Timer")]
     public float tempsEcoule = 0f;
@@ -71,6 +73,10 @@ public class GameManager : MonoBehaviour
         tempsEcoule = 0f;
         OnTutorialStart?.Invoke();
         Debug.Log("GAME : tutoriel demarre");
+        if (gameOverUI != null)
+        {
+            gameOverUI.ResetToutOSC();
+        }
     }
 
     public void TerminerTutoriel()

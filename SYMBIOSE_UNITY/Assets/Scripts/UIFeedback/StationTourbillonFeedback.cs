@@ -1,3 +1,4 @@
+using extOSC;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,6 +24,9 @@ public class StationTourbillonFeedback : MonoBehaviour
     public float tempsMinChangementFinal = 3f;
     public float tempsMaxChangementInitial = 11f;
     public float tempsMaxChangementFinal = 5f;
+
+    [Header("OSC")]
+    public OSCTransmitter oscTransmitter;
 
     private enum SensRotation { Horaire, AntiHoraire }
     private SensRotation sensActuel = SensRotation.Horaire;
@@ -150,6 +154,8 @@ public class StationTourbillonFeedback : MonoBehaviour
 
         // sauvegarder angle précédent
         angleJoystickPrecedent = angleJoystickActuel;
+
+        EnvoyerOSCAngle();
     }
 
     public void UpdateJoystick(int faderX, int faderY)
@@ -226,5 +232,14 @@ public class StationTourbillonFeedback : MonoBehaviour
     public bool EstEnEquilibre()
     {
         return accumulateurRotation > (rotationRequiseParSeconde * 1f);
+    }
+
+    void EnvoyerOSCAngle()
+    {
+        if (oscTransmitter == null) return;
+
+        var message = new OSCMessage("/tourbillon/angle");
+        message.AddValue(OSCValue.Float(angleJoystickActuel));
+        oscTransmitter.Send(message);
     }
 }
