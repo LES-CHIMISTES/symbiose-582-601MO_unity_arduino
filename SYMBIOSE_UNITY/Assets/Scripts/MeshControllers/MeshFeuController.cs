@@ -4,7 +4,17 @@ public class MeshFeuController : MonoBehaviour
 {
     [Header("Paramètres")]
     public float scaleMin = 0f;
-    public float scaleMax = 1.5f; // hauteur maximale du mesh feu
+    public float scaleMax = 1.5f;
+
+    [Header("Pivot compensation")]
+    public float hauteurMeshBase = 1f;  // hauteur du mesh quand scale Z = 1
+
+    [Header("Visibilite")]
+    public float seuilVisibilite = 0.05f;
+
+    [Header("Lumiere")]
+    public Light pointLight;
+    public float intensiteMax = 0.08f;
 
     [Header("Seuils audio (inversés)")]
     public float seuilAllumage = 3900f;
@@ -12,87 +22,97 @@ public class MeshFeuController : MonoBehaviour
 
     private int angleActuel = 0;
     private bool bruleurAllume = false;
+    private Vector3 positionInitiale;
+    private Vector3 scaleInitial;
 
     void Start()
     {
-        // Scale initial à 0
-        transform.localScale = new Vector3(
-            transform.localScale.x,
-            scaleMin,
-            transform.localScale.z
-        );
+        positionInitiale = transform.localPosition;
+        scaleInitial = transform.localScale;
+
+        // scale initial a 0
+        AppliquerScaleEtPosition(scaleMin);
     }
 
     void Update()
     {
-        // gère les sons du brûleur
         GererSonsBruleur();
     }
 
-    // OSCInputManager mettre à jour le scale
     public void UpdateScale(float valeurAngle)
     {
         angleActuel = (int)valeurAngle;
 
-        // map la valeur 0-4096 vers scaleMin-scaleMax
-        float normalized = 1f - (valeurAngle / 4096f); // inversé
-        float newScaleY = Mathf.Lerp(scaleMin, scaleMax, normalized);
+        float normalized = 1f - (valeurAngle / 4096f);
+        float newScaleZ = Mathf.Lerp(scaleMin, scaleMax, normalized);
 
-        // applique le nouveau scale
+        AppliquerScaleEtPosition(newScaleZ);
+    }
+
+    void AppliquerScaleEtPosition(float scaleZ)
+    {
+        // appliquer scale sur Z
         transform.localScale = new Vector3(
-            transform.localScale.x,
-            newScaleY,
-            transform.localScale.z
+            scaleInitial.x,
+            scaleInitial.y,
+            scaleZ
         );
+
+        // compenser position Y pour que le bas reste fixe
+        // quand scale = 0, le mesh est au sol
+        // quand scale augmente, on monte de la moitie de la hauteur ajoutee
+        float decalageY = (scaleZ * hauteurMeshBase) / 2f;
+        transform.localPosition = new Vector3(
+            positionInitiale.x,
+            positionInitiale.y + decalageY,
+            positionInitiale.z
+        );
+
+        // cacher si trop petit
+        MeshRenderer mr = GetComponent<MeshRenderer>();
+        if (mr != null)
+        {
+            mr.enabled = scaleZ > seuilVisibilite;
+        }
+
+        if (pointLight != null)
+        {
+            pointLight.intensity = Mathf.Lerp(0f, intensiteMax, scaleZ / scaleMax);
+        }
     }
 
     void GererSonsBruleur()
     {
         if (AudioManager.Instance == null) return;
 
-        // allumé si angle < seuilAllumage (car 0 = max)
         bool estAllume = angleActuel < seuilAllumage;
 
-        // detect le passage de éteint à allumé
         if (estAllume && !bruleurAllume)
         {
-            // s'allume
             AudioManager.Instance.JouerBruleurAllumage();
             AudioManager.Instance.DemarrerBruleurConstant();
-            Debug.Log("BRULEUR : Allumé (angle < " + seuilAllumage + ")");
         }
         else if (!estAllume && bruleurAllume)
         {
-            // s'éteint
             AudioManager.Instance.ArreterBruleurConstant();
-            Debug.Log("BRULEUR : Éteint (angle ≥ " + seuilAllumage + ")");
         }
 
-        // volume du brûleur constant
         if (bruleurAllume)
         {
-            // de 0 à seuilAllumage 
             float volumeBruleur = CalculerVolumeInverse(angleActuel, 0f, seuilAllumage);
             AudioManager.Instance.SetVolumeBruleurConstant(volumeBruleur);
         }
 
-        // volume de la théière
-        // volume de seuilTheiere à 0 
         float volumeTheiere = CalculerVolumeInverse(angleActuel, 0f, seuilTheiere);
         AudioManager.Instance.SetVolumeTheiere(volumeTheiere);
 
         bruleurAllume = estAllume;
     }
 
-    // calc le volume proportionnel
     float CalculerVolumeInverse(float valeur, float min, float max)
     {
-        if (valeur >= max)
-            return 0f; // si au-dessus du max, volume à 0
-        if (valeur <= min)
-            return 1f; // si au minimum, volume max
-
-        // plus l'angle est bas, plus le volume est haut
+        if (valeur >= max) return 0f;
+        if (valeur <= min) return 1f;
         return 1f - ((valeur - min) / (max - min));
     }
 }

@@ -86,25 +86,28 @@ public class MeshEauController : MonoBehaviour
     // OSCInputManager (d�tecte agitation)
     public void UpdateAccel(float valeurAccel)
     {
-        // d�passe seuil, remplissage
+        // penché dans le bon sens : remplissage proportionnel
         if (valeurAccel > seuilAgitation)
         {
-            // augmente proportionnellement au mouvement
             float augmentation = (valeurAccel - seuilAgitation) * vitesseRemplissage * Time.deltaTime;
             niveauEauActuel += augmentation;
-            // clamp entre 0 et 1
             niveauEauActuel = Mathf.Clamp01(niveauEauActuel);
 
-            // joue son avec cooldown pour �viter spam
             if (AudioManager.Instance != null)
             {
-                // check si assez de temps s'est �coul� depuis le dernier son
                 if (Time.time - dernierSonEau >= cooldownSonEau)
                 {
                     AudioManager.Instance.JouerEauVersee();
-                    dernierSonEau = Time.time; // update � jour le temps du dernier son
+                    dernierSonEau = Time.time;
                 }
             }
+        }
+        // penché dans le sens inverse : vidange proportionnelle
+        else if (valeurAccel < -seuilAgitation)
+        {
+            float diminution = (Mathf.Abs(valeurAccel) - seuilAgitation) * vitesseRemplissage * Time.deltaTime;
+            niveauEauActuel -= diminution;
+            niveauEauActuel = Mathf.Clamp01(niveauEauActuel);
         }
     }
 

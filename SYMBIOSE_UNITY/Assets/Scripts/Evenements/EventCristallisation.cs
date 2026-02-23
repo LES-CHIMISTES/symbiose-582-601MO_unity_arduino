@@ -4,6 +4,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using System.Collections;
 using extOSC;
+using TMPro;
 public class EventCristallisation : MonoBehaviour
 {
     // =====================================================================
@@ -18,6 +19,9 @@ public class EventCristallisation : MonoBehaviour
     public RectTransform[] anneauxApproche; // taille 3
     public Image[] anneauxImage;            // taille 3
 
+    [Header("Flux poudre")]
+    public FluxPoudreController fluxPoudre;
+
     [Header("overlays erreur (ordre : bleu, vert, blanc)")]
     public Image[] overlaysErreur;          // taille 3, un par cercle
 
@@ -27,6 +31,14 @@ public class EventCristallisation : MonoBehaviour
     [Header("jauge progression")]
     public Slider jaugeProgression;
     public Image fillJauge;
+
+    [Header("ui texte")]
+    public TextMeshProUGUI texteAlert;
+    public float dureeAffichageTexte = 3f;
+
+    [Header("flash reussite")]
+    public Image flashReussite;   // image plein ecran verte
+    public float dureeFlashReussite = 0.4f;
 
     // =====================================================================
     // PARAMETRES GAMEPLAY
@@ -54,6 +66,18 @@ public class EventCristallisation : MonoBehaviour
     [Header("animation reussite")]
     public float dureeScaleOut = 0.25f;
     public float scaleOutMax = 1.5f;
+
+    [Header("difficulte progressive evenement")]
+    public float dureeAnneauInitialeDebutant = 1.5f;
+    public float dureeAnneauInitialeExpert = 0.9f;
+    public float dureeAnneauMinimaleDebutant = 0.6f;
+    public float dureeAnneauMinimaleExpert = 0.35f;
+    public int cyclesRequisDebutant = 5;
+    public int cyclesRequisExpert = 7;
+    public float toleranceAvantDebutant = 0.5f;
+    public float toleranceAvantExpert = 0.3f;
+    public float toleranceApresDebutant = 0.4f;
+    public float toleranceApresExpert = 0.25f;
 
     // =====================================================================
     // REFERENCES 3D ET SYSTEME
@@ -140,11 +164,25 @@ public class EventCristallisation : MonoBehaviour
             eventCristallisationPanel.SetActive(true);
         }
 
+        if (texteAlert != null)
+        {
+            texteAlert.gameObject.SetActive(true);
+            texteAlert.text = "La potion se cristallise... \r\ncomplétez la séquence rythmée!";
+            StartCoroutine(FadeTexte());
+        }
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEventCristallisation();
+        }
+
         // initialiser jauge
         if (jaugeProgression != null)
         {
             jaugeProgression.value = 0f;
         }
+
+
 
         // cacher overlays erreur
         if (overlaysErreur != null)
@@ -183,6 +221,16 @@ public class EventCristallisation : MonoBehaviour
         if (colonnePoudres != null)
         {
             colonnePoudres.alpha = 0.25f;
+        }
+
+        if (GameManager.Instance != null)
+        {
+            float d = GameManager.Instance.GetProgressionDifficulte();
+            dureeAnneauInitiale = Mathf.Lerp(dureeAnneauInitialeDebutant, dureeAnneauInitialeExpert, d);
+            dureeAnneauMinimale = Mathf.Lerp(dureeAnneauMinimaleDebutant, dureeAnneauMinimaleExpert, d);
+            cyclesRequis = Mathf.RoundToInt(Mathf.Lerp(cyclesRequisDebutant, cyclesRequisExpert, d));
+            fenetreToleranceAvant = Mathf.Lerp(toleranceAvantDebutant, toleranceAvantExpert, d);
+            fenetreToleranceApres = Mathf.Lerp(toleranceApresDebutant, toleranceApresExpert, d);
         }
 
         // demarrer premier anneau
@@ -274,11 +322,7 @@ public class EventCristallisation : MonoBehaviour
         }
         if (fillJauge != null)
         {
-            fillJauge.color = Color.Lerp(
-    new Color(0.3f, 0.3f, 0.3f, 1f),
-    new Color(0.3f, 0.9f, 0.3f, 1f),
-    progressionAffichee
-);
+            fillJauge.color = new Color(0.125f, 1f, 0.522f, 1f);
         }
 
         // post-processing progressif
@@ -321,11 +365,34 @@ public class EventCristallisation : MonoBehaviour
         }
 
         // bon bouton, bon timing
+        // bon bouton, bon timing
         appuiAccepteCeStep = true;
         anneauActif = false;
+
+        // changer couleur du flux
+        if (fluxPoudre != null)
+        {
+            int keyDuCercle = IndexToKeyNumber(indexActuel);
+            fluxPoudre.ChangerCouleur(keyDuCercle);
+        }
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerCristallisationBonTiming();
+        }
         StartCoroutine(AnimationReussiteStep());
     }
 
+    int IndexToKeyNumber(int index)
+    {
+        // inverse du mapping KeyNumberToIndex
+        switch (index)
+        {
+            case 0: return 2; // bleu = key2
+            case 1: return 1; // vert = key1
+            case 2: return 3; // blanc = key3
+            default: return 1;
+        }
+    }
     int KeyNumberToIndex(int keyNumber)
     {
         // mapping : key1=vert=index1, key2=bleu=index0, key3=blanc=index2
@@ -551,14 +618,21 @@ public class EventCristallisation : MonoBehaviour
     void ResoudreEvenement()
     {
         phaseActuelle = PhaseCristallisation.Resolu;
-
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEventReussi();
+        }
+        StartCoroutine(FlashReussiteCoroutine());
         DesactiverEffets();
 
         if (gameManager != null)
         {
             gameManager.EvenementResolu();
         }
-
+        if (StabilityManager.Instance != null)
+        {
+            StabilityManager.Instance.BonusEvenement();
+        }
         if (EventManager.Instance != null)
         {
             EventManager.Instance.EvenementTermine();
@@ -579,6 +653,10 @@ public class EventCristallisation : MonoBehaviour
         {
             gameManager.EvenementEchoue();
         }
+        if (FluxPoudreController.Instance != null)
+        {
+            FluxPoudreController.Instance.Arreter();
+        }
 
         Debug.Log("EVENT CRISTALLISATION : echec");
     }
@@ -593,7 +671,10 @@ public class EventCristallisation : MonoBehaviour
         {
             eauRenderer.material = materielEauInitial;
         }
-
+        if (texteAlert != null)
+        {
+            texteAlert.gameObject.SetActive(false);
+        }
         if (meshsCristaux != null)
         {
             foreach (GameObject mesh in meshsCristaux)
@@ -639,6 +720,44 @@ public class EventCristallisation : MonoBehaviour
         }
 
         EnvoyerOSCLumiere(false);
+    }
+
+    IEnumerator FadeTexte()
+    {
+        if (texteAlert == null) yield break;
+        yield return new WaitForSeconds(dureeAffichageTexte);
+        float elapsed = 0f;
+        float duree = 1f;
+        Color c = texteAlert.color;
+        while (elapsed < duree)
+        {
+            elapsed += Time.deltaTime;
+            c.a = 1f - (elapsed / duree);
+            texteAlert.color = c;
+            yield return null;
+        }
+        texteAlert.gameObject.SetActive(false);
+    }
+
+    IEnumerator FlashReussiteCoroutine()
+    {
+        if (flashReussite == null) yield break;
+
+        flashReussite.gameObject.SetActive(true);
+        Color c = flashReussite.color;
+        c.a = 0.25f;
+        flashReussite.color = c;
+
+        float elapsed = 0f;
+        while (elapsed < dureeFlashReussite)
+        {
+            elapsed += Time.deltaTime;
+            c.a = Mathf.Lerp(0.25f, 0f, elapsed / dureeFlashReussite);
+            flashReussite.color = c;
+            yield return null;
+        }
+
+        flashReussite.gameObject.SetActive(false);
     }
 
     void EnvoyerOSCLumiere(bool allumer)

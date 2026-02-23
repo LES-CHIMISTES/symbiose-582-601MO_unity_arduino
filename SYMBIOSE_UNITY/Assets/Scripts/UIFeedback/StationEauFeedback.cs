@@ -11,6 +11,8 @@ public class StationEauFeedback : MonoBehaviour
     public Slider jaugeEau;
     public RectTransform cibleEau;
     public RectTransform barreTemps;
+    [Header("Versement")]
+    public VersementController versementController;
 
     [Header("Params")]
     public float tolerance = 0.08f;
@@ -85,7 +87,7 @@ public class StationEauFeedback : MonoBehaviour
 
         if (Time.frameCount % 60 == 0)
         {
-            Debug.Log($"EAU : Niveau={niveauEauActuel:F3}, Cible={valeurCiblePourComparaison:F3}, Diff={difference:F3}, Tolérance={tolerance}, EnÉquilibre={difference <= tolerance}");
+            //Debug.Log($"EAU : Niveau={niveauEauActuel:F3}, Cible={valeurCiblePourComparaison:F3}, Diff={difference:F3}, Tolérance={tolerance}, EnÉquilibre={difference <= tolerance}");
         }
 
         if (difference <= tolerance)
@@ -149,14 +151,6 @@ public class StationEauFeedback : MonoBehaviour
 
                 Debug.Log("EAU : Sorti de l'équilibre");
             }
-            // stabilité
-            if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
-            {
-                if (StabilityManager.Instance != null)
-                {
-                    StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "Eau hors équilibre");
-                }
-            }
         }
     }
 
@@ -167,6 +161,14 @@ public class StationEauFeedback : MonoBehaviour
 
     void DeplacerCible()
     {
+        if (versementController != null)
+        {
+            versementController.Verser();
+        }
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerDeplacerCible();
+        }
         positionCibleActuelle = Random.Range(0.2f, 0.8f);
         UpdateCiblePosition();
         chronoMaintien = 0f;

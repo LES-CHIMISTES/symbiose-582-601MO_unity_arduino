@@ -4,9 +4,25 @@ public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance; // Instance unique pour accès facile
 
+    [Header("Sons Tutoriel")]
+    public AudioClip sonEtapeTutoriel;
+
+    [Header("Sons Station Eau")]
+    public AudioClip sonDeplacerCible;
+
+    [Header("Sons Evenements")]
+    public AudioClip sonEventEvaporation;
+    public AudioClip sonEventCristallisation;
+    public AudioClip sonEventVortex;
+    public AudioClip sonZoneOptimale;
+    public AudioClip sonEtapeGel;
+    public AudioClip sonCristallisationBonTiming;
+    public AudioClip sonEventReussi;
     [Header("Sons UI")]
     public AudioClip sonVictoire;
     public AudioClip sonEchec;
+    [Header("Sons Stabilite")]
+    public AudioClip sonAlerteCritique;
 
     [Header("Sons Interactions")]
     public AudioClip sonBrassage; // Faders
@@ -169,6 +185,60 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    public void JouerEtapeTutoriel()
+    {
+        if (sonEtapeTutoriel != null)
+            sourceUI.PlayOneShot(sonEtapeTutoriel);
+    }
+
+    public void JouerDeplacerCible()
+    {
+        if (sonDeplacerCible != null)
+            sourceUI.PlayOneShot(sonDeplacerCible);
+    }
+
+    public void JouerEventEvaporation()
+    {
+        if (sonEventEvaporation != null)
+            sourceUI.PlayOneShot(sonEventEvaporation);
+    }
+
+    public void JouerEventCristallisation()
+    {
+        if (sonEventCristallisation != null)
+            sourceUI.PlayOneShot(sonEventCristallisation);
+    }
+
+    public void JouerEventVortex()
+    {
+        if (sonEventVortex != null)
+            sourceUI.PlayOneShot(sonEventVortex);
+    }
+
+    public void JouerZoneOptimale()
+    {
+        if (sonZoneOptimale != null)
+            sourceUI.PlayOneShot(sonZoneOptimale);
+    }
+
+    public void JouerEtapeGel()
+    {
+        if (sonEtapeGel != null)
+            sourceUI.PlayOneShot(sonEtapeGel);
+    }
+
+    public void JouerCristallisationBonTiming()
+    {
+        if (sonCristallisationBonTiming != null)
+            sourceUI.PlayOneShot(sonCristallisationBonTiming);
+    }
+
+    public void JouerEventReussi()
+    {
+        if (sonEventReussi != null)
+            sourceUI.PlayOneShot(sonEventReussi);
+    }
+
     public void JouerFrosting()
     {
         if (sonFrosting != null)
@@ -176,6 +246,12 @@ public class AudioManager : MonoBehaviour
             sourceUI.PlayOneShot(sonFrosting);
             Debug.Log("AUDIO : Frosting (gel)");
         }
+    }
+
+    public void JouerAlerteCritique()
+    {
+        if (sonAlerteCritique != null)
+            sourceUI.PlayOneShot(sonAlerteCritique);
     }
 
     public void MuterSonsFeu(bool mute)

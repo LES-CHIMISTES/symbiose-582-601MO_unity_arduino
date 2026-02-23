@@ -33,8 +33,12 @@ public class OSCInputManager : MonoBehaviour
 
     public EventCristallisation eventCristallisation;
 
-    private float progressionAffichee = 0f;
+    public EventVortex eventVortex;
 
+    private float progressionAffichee = 0f;
+    private bool key1Enfonce = false;
+    private bool key2Enfonce = false;
+    private bool key3Enfonce = false;
     void Start()
     {
         oscReceiver.Bind("/accelX", AccelX);
@@ -164,16 +168,23 @@ public class OSCInputManager : MonoBehaviour
 
         int value = message.Values[0].IntValue;
 
-        if (becherController != null)
-        {
-            int faderY = dernierFaderY != -1 ? dernierFaderY : 512;
-            becherController.UpdateRotation(value, faderY);
-        }
+        int faderY = dernierFaderY != -1 ? dernierFaderY : 512;
 
-        if (stationTourbillonFeedback != null)
+        if (eventVortex != null && eventVortex.gameObject.activeSelf)
         {
-            int faderY = dernierFaderY != -1 ? dernierFaderY : 512;
-            stationTourbillonFeedback.UpdateJoystick(value, faderY);
+            eventVortex.UpdateJoystick(value, faderY);
+        }
+        else
+        {
+            if (becherController != null)
+            {
+                becherController.UpdateRotation(value, faderY);
+            }
+
+            if (stationTourbillonFeedback != null)
+            {
+                stationTourbillonFeedback.UpdateJoystick(value, faderY);
+            }
         }
 
         if (dernierFaderX != -1)
@@ -197,16 +208,23 @@ public class OSCInputManager : MonoBehaviour
 
         int value = message.Values[0].IntValue;
 
-        if (becherController != null)
-        {
-            int faderX = dernierFaderX != -1 ? dernierFaderX : 512;
-            becherController.UpdateRotation(faderX, value);
-        }
+        int faderX = dernierFaderX != -1 ? dernierFaderX : 512;
 
-        if (stationTourbillonFeedback != null)
+        if (eventVortex != null && eventVortex.gameObject.activeSelf)
         {
-            int faderX = dernierFaderX != -1 ? dernierFaderX : 512;
-            stationTourbillonFeedback.UpdateJoystick(faderX, value);
+            eventVortex.UpdateJoystick(faderX, value);
+        }
+        else
+        {
+            if (becherController != null)
+            {
+                becherController.UpdateRotation(faderX, value);
+            }
+
+            if (stationTourbillonFeedback != null)
+            {
+                stationTourbillonFeedback.UpdateJoystick(faderX, value);
+            }
         }
 
         if (dernierFaderY != -1)
@@ -227,14 +245,12 @@ public class OSCInputManager : MonoBehaviour
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
         if (tutorialManager != null && !tutorialManager.EstStationActive("poudres")) return;
         int value = message.Values[0].IntValue;
-
         if (value == 1)
         {
             if (meshEauController != null)
             {
                 meshEauController.SetCouleur(1);
             }
-
             if (eventCristallisation != null && eventCristallisation.gameObject.activeSelf)
             {
                 eventCristallisation.AppuyerBouton(1);
@@ -246,34 +262,32 @@ public class OSCInputManager : MonoBehaviour
                     stationPoudresFeedback.AppuyerBouton(1);
                 }
             }
-
-            if (AudioManager.Instance != null)
+            if (!key1Enfonce && AudioManager.Instance != null)
             {
                 AudioManager.Instance.JouerKeyPress();
             }
+            key1Enfonce = true;
         }
         else if (value == 0)
         {
+            key1Enfonce = false;
             if (stationPoudresFeedback != null)
             {
                 stationPoudresFeedback.RelacherBouton(1);
             }
         }
     }
-
     void Key2(OSCMessage message)
     {
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
         if (tutorialManager != null && !tutorialManager.EstStationActive("poudres")) return;
         int value = message.Values[0].IntValue;
-
         if (value == 1)
         {
             if (meshEauController != null)
             {
                 meshEauController.SetCouleur(2);
             }
-
             if (eventCristallisation != null && eventCristallisation.gameObject.activeSelf)
             {
                 eventCristallisation.AppuyerBouton(2);
@@ -285,34 +299,32 @@ public class OSCInputManager : MonoBehaviour
                     stationPoudresFeedback.AppuyerBouton(2);
                 }
             }
-
-            if (AudioManager.Instance != null)
+            if (!key2Enfonce && AudioManager.Instance != null)
             {
                 AudioManager.Instance.JouerKeyPress();
             }
+            key2Enfonce = true;
         }
         else if (value == 0)
         {
+            key2Enfonce = false;
             if (stationPoudresFeedback != null)
             {
                 stationPoudresFeedback.RelacherBouton(2);
             }
         }
     }
-
     void Key3(OSCMessage message)
     {
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
         if (tutorialManager != null && !tutorialManager.EstStationActive("poudres")) return;
         int value = message.Values[0].IntValue;
-
         if (value == 1)
         {
             if (meshEauController != null)
             {
                 meshEauController.SetCouleur(3);
             }
-
             if (eventCristallisation != null && eventCristallisation.gameObject.activeSelf)
             {
                 eventCristallisation.AppuyerBouton(3);
@@ -324,14 +336,15 @@ public class OSCInputManager : MonoBehaviour
                     stationPoudresFeedback.AppuyerBouton(3);
                 }
             }
-
-            if (AudioManager.Instance != null)
+            if (!key3Enfonce && AudioManager.Instance != null)
             {
                 AudioManager.Instance.JouerKeyPress();
             }
+            key3Enfonce = true;
         }
         else if (value == 0)
         {
+            key3Enfonce = false;
             if (stationPoudresFeedback != null)
             {
                 stationPoudresFeedback.RelacherBouton(3);

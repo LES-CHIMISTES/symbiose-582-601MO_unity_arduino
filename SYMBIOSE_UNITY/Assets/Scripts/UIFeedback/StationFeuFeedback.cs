@@ -110,14 +110,6 @@ public class StationFeuFeedback : MonoBehaviour
                     }
                 }
             }
-            // stabilité
-            if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
-            {
-                if (StabilityManager.Instance != null)
-                {
-                    StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "Feu hors équilibre");
-                }
-            }
         }
     }
 

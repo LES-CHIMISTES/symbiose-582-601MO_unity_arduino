@@ -19,7 +19,10 @@ public class TutorialManager : MonoBehaviour
     public TutorialUI tutorialUI;
 
     [Header("Paramètres")]
-    public float tempsMaintienRequis = 1.5f; // temps minimum en équilibre pour valider l'étape
+    public float tempsMaintienEau = 3.5f;
+    public float tempsMaintienFeu = 2f;
+    public float tempsMaintienPoudres = 0.5f;
+    public float tempsMaintienTourbillon = 2.5f;
 
     public AudioSource[] audioSourcesFeu;
 
@@ -98,7 +101,7 @@ public class TutorialManager : MonoBehaviour
                 chronoMaintienEtape += Time.deltaTime;
 
                 // Valider si maintenu assez longtemps
-                if (chronoMaintienEtape >= tempsMaintienRequis)
+                if (chronoMaintienEtape >= GetTempsMaintienEtape())
                 {
                     CompleterEtape(etapeActuelle);
                 }
@@ -108,6 +111,18 @@ public class TutorialManager : MonoBehaviour
                 // Reset chrono si sort de l'équilibre
                 chronoMaintienEtape = 0f;
             }
+        }
+    }
+
+    float GetTempsMaintienEtape()
+    {
+        switch (etapeActuelle)
+        {
+            case TutorialStep.Eau: return tempsMaintienEau;
+            case TutorialStep.Feu: return tempsMaintienFeu;
+            case TutorialStep.Poudres: return tempsMaintienPoudres;
+            case TutorialStep.Tourbillon: return tempsMaintienTourbillon;
+            default: return 1.5f;
         }
     }
 
@@ -144,6 +159,11 @@ public class TutorialManager : MonoBehaviour
         if (tutorialUI != null)
         {
             tutorialUI.CompleterEtape((int)etape);
+        }
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.JouerEtapeTutoriel();
         }
 
         Debug.Log($"TUTORIEL : ✓ Étape {(int)etape + 1}/4 complétée !");

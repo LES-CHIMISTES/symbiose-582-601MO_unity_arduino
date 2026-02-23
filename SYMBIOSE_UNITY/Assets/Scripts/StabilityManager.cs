@@ -5,27 +5,65 @@ public class StabilityManager : MonoBehaviour
 {
     public static StabilityManager Instance { get; private set; }
 
-    [Header("Stabilité")]
+    // =====================================================================
+    // REFERENCES STATIONS
+    // =====================================================================
+
+    [Header("Stations")]
+    public StationEauFeedback stationEau;
+    public StationFeuFeedback stationFeu;
+    public StationPoudresFeedback stationPoudres;
+    public StationTourbillonFeedback stationTourbillon;
+
+    // =====================================================================
+    // PARAMETRES STABILITE
+    // =====================================================================
+
+    [Header("Stabilite")]
     [Range(0f, 100f)]
     public float stabiliteActuelle = 100f;
     public float stabiliteMax = 100f;
 
-    [Header("Perte de stabilité")]
-    public float perteParSecondeManipulation = 0f; // Quand manipulation échouée
-    public float perteParSecondeEvenement = 0f; // Quand événement non résolu
-    public float perteParSecondeCascade = 0f; // Quand 2+ événements actifs
+    [Header("Perte par station hors equilibre")]
+    public float perteParStationParSeconde = 3f;
+
+    [Header("Gain par station en equilibre")]
+    public float gainParStationParSeconde = 1.5f;
+
+    [Header("Regeneration passive")]
+    public float regenerationPassive = 0.5f;
+
+    [Header("Bonus evenement resolu")]
+    public float bonusEvenementResolu = 8f;
+
+    // =====================================================================
+    // UI
+    // =====================================================================
 
     [Header("UI")]
-    public Slider jaugeStabilite; // Barre de stabilité
-    public Image fillStabilite; // Pour changer la couleur
-    public Color couleurSaine = Color.green;
-    public Color couleurDanger = Color.yellow;
-    public Color couleurCritique = Color.red;
+    public Slider jaugeStabilite;
+    public Image fillStabilite;
 
-    [Header("Debug")]
-    public bool afficherDebugLogs = true;
+    [Header("Couleurs jauge")]
+    public Color couleurSaine = new Color(0.3f, 0.9f, 0.3f, 1f);
+    public Color couleurDanger = new Color(0.9f, 0.9f, 0.2f, 1f);
+    public Color couleurCritique = new Color(0.9f, 0.2f, 0.2f, 1f);
 
-    private bool enTutoriel = true;
+    [Header("Alerte visuelle")]
+    public Image vignetteAlerte;
+    public float seuilAlerte = 30f;
+
+    // =====================================================================
+    // VARIABLES PRIVEES
+    // =====================================================================
+
+    private bool actif = false;
+    private float stabiliteAffichee;
+    private bool etaitCritique = false;
+
+    // =====================================================================
+    // INITIALISATION
+    // =====================================================================
 
     void Awake()
     {
@@ -41,110 +79,174 @@ public class StabilityManager : MonoBehaviour
 
     void Start()
     {
-        // Initialiser jauge
         stabiliteActuelle = stabiliteMax;
+        stabiliteAffichee = stabiliteMax;
+
+        if (vignetteAlerte != null)
+        {
+            vignetteAlerte.gameObject.SetActive(false);
+        }
+
         UpdateUI();
 
-        // Écouter fin du tutoriel
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.OnTutorialComplete.AddListener(ActiverSystemeStabilite);
+            GameManager.Instance.OnTutorialComplete.AddListener(Activer);
         }
     }
+
+    void Activer()
+    {
+        actif = true;
+        Debug.Log("STABILITE : systeme active");
+    }
+
+    // =====================================================================
+    // UPDATE
+    // =====================================================================
 
     void Update()
     {
-        // Ne pas perdre de stabilité pendant le tutoriel
-        if (enTutoriel) return;
+        if (!actif) return;
+        if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
 
-        // Update UI
+        // compter stations en equilibre / hors equilibre
+        int stationsEnEquilibre = 0;
+        int stationsHorsEquilibre = 0;
+
+        VerifierStation(stationEau, ref stationsEnEquilibre, ref stationsHorsEquilibre);
+        VerifierStation(stationFeu, ref stationsEnEquilibre, ref stationsHorsEquilibre);
+        VerifierStation(stationPoudres, ref stationsEnEquilibre, ref stationsHorsEquilibre);
+        VerifierStation(stationTourbillon, ref stationsEnEquilibre, ref stationsHorsEquilibre);
+
+        // calculer variation
+        float gain = stationsEnEquilibre * gainParStationParSeconde * Time.deltaTime;
+        float multiplicateurDifficulte = 1f;
+        if (GameManager.Instance != null)
+        {
+            float d = GameManager.Instance.GetProgressionDifficulte();
+            multiplicateurDifficulte = Mathf.Lerp(1f, 2f, d);
+        }
+        float perte = stationsHorsEquilibre * perteParStationParSeconde * multiplicateurDifficulte * Time.deltaTime;
+        float regen = regenerationPassive * Time.deltaTime;
+
+        stabiliteActuelle += gain - perte + regen;
+        stabiliteActuelle = Mathf.Clamp(stabiliteActuelle, 0f, stabiliteMax);
+
+        // alerte visuelle
+        UpdateVignetteAlerte();
+
+        bool critique = stabiliteActuelle < seuilAlerte;
+        if (critique && !etaitCritique)
+        {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.JouerAlerteCritique();
+            }
+        }
+        etaitCritique = critique;
+
+        // UI smooth
+        stabiliteAffichee = Mathf.Lerp(stabiliteAffichee, stabiliteActuelle, Time.deltaTime * 8f);
         UpdateUI();
 
-        // Check Game Over
-        if (stabiliteActuelle <= 0f && GameManager.Instance != null)
+        // game over
+        if (stabiliteActuelle <= 0f)
         {
-            GameManager.Instance.DeclencherGameOver();
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.DeclencherGameOver();
+            }
         }
     }
 
-    void ActiverSystemeStabilite()
+    void VerifierStation(MonoBehaviour station, ref int enEquilibre, ref int horsEquilibre)
     {
-        enTutoriel = false;
-        Debug.Log("STABILITÉ : Système activé après tutoriel");
+        // station desactivee (pendant un evenement) = on l'ignore
+        if (station == null || !station.enabled) return;
+
+        bool equilibre = false;
+
+        if (station is StationEauFeedback eau)
+            equilibre = eau.EstEnEquilibre();
+        else if (station is StationFeuFeedback feu)
+            equilibre = feu.EstEnEquilibre();
+        else if (station is StationPoudresFeedback poudres)
+            equilibre = poudres.EstEnEquilibre();
+        else if (station is StationTourbillonFeedback tourbillon)
+            equilibre = tourbillon.EstEnEquilibre();
+
+        if (equilibre)
+            enEquilibre++;
+        else
+            horsEquilibre++;
     }
 
-    // ===== MÉTHODES PUBLIQUES =====
+    // =====================================================================
+    // METHODES PUBLIQUES
+    // =====================================================================
 
-    public void PerdreStabilite(float montant, string raison = "")
+    public void BonusEvenement()
     {
-        if (enTutoriel) return; // Pas de perte pendant tutoriel
+        if (!actif) return;
 
-        stabiliteActuelle = Mathf.Max(0f, stabiliteActuelle - montant);
-
-        if (afficherDebugLogs && !string.IsNullOrEmpty(raison))
-        {
-            Debug.LogWarning($"STABILITÉ : -{montant:F1} ({raison}) → {stabiliteActuelle:F1}/{stabiliteMax}");
-        }
-
-        // Feedback visuel si critique
-        if (stabiliteActuelle < 30f && stabiliteActuelle > 0f)
-        {
-            // TODO: Shake caméra, son d'alerte
-        }
+        stabiliteActuelle = Mathf.Min(stabiliteMax, stabiliteActuelle + bonusEvenementResolu);
+        Debug.Log($"STABILITE : +{bonusEvenementResolu} (evenement resolu) -> {stabiliteActuelle:F0}%");
     }
 
-    public void GagnerStabilite(float montant, string raison = "")
+    public float GetPourcentage()
     {
-        if (enTutoriel) return;
-
-        stabiliteActuelle = Mathf.Min(stabiliteMax, stabiliteActuelle + montant);
-
-        if (afficherDebugLogs && !string.IsNullOrEmpty(raison))
-        {
-            Debug.Log($"STABILITÉ : +{montant:F1} ({raison}) → {stabiliteActuelle:F1}/{stabiliteMax}");
-        }
-    }
-
-    public void PerdreStabiliteParSeconde(float montantParSeconde, string raison = "")
-    {
-        PerdreStabilite(montantParSeconde * Time.deltaTime, raison);
-    }
-
-    public float GetPourcentageStabilite()
-    {
-        return (stabiliteActuelle / stabiliteMax) * 100f;
+        return stabiliteActuelle / stabiliteMax;
     }
 
     public bool EstCritique()
     {
-        return stabiliteActuelle < 30f;
+        return stabiliteActuelle < seuilAlerte;
     }
 
-    // ===== UI =====
+    // =====================================================================
+    // UI
+    // =====================================================================
 
     void UpdateUI()
     {
         if (jaugeStabilite != null)
         {
-            jaugeStabilite.value = stabiliteActuelle / stabiliteMax;
+            jaugeStabilite.value = stabiliteAffichee / stabiliteMax;
         }
 
         if (fillStabilite != null)
         {
-            float pourcentage = GetPourcentageStabilite();
+            float pct = stabiliteAffichee / stabiliteMax;
 
-            if (pourcentage > 50f)
-            {
-                fillStabilite.color = couleurSaine;
-            }
-            else if (pourcentage > 30f)
-            {
-                fillStabilite.color = couleurDanger;
-            }
+            if (pct > 0.5f)
+                fillStabilite.color = Color.Lerp(couleurDanger, couleurSaine, (pct - 0.5f) * 2f);
+            else if (pct > 0.2f)
+                fillStabilite.color = Color.Lerp(couleurCritique, couleurDanger, (pct - 0.2f) / 0.3f);
             else
-            {
                 fillStabilite.color = couleurCritique;
-            }
+        }
+    }
+
+    void UpdateVignetteAlerte()
+    {
+        if (vignetteAlerte == null) return;
+
+        if (stabiliteActuelle < seuilAlerte && stabiliteActuelle > 0f)
+        {
+            vignetteAlerte.gameObject.SetActive(true);
+
+            float intensite = 1f - (stabiliteActuelle / seuilAlerte);
+            float pulse = Mathf.Sin(Time.time * 4f) * 0.5f + 0.5f;
+            float alpha = intensite * pulse * 0.3f;
+
+            Color c = vignetteAlerte.color;
+            c.a = alpha;
+            vignetteAlerte.color = c;
+        }
+        else
+        {
+            vignetteAlerte.gameObject.SetActive(false);
         }
     }
 }

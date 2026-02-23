@@ -1,3 +1,4 @@
+using extOSC;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,6 +19,15 @@ public class StationTourbillonFeedback : MonoBehaviour
     [Header("Stabilité")]
     public float perteStabiliteHorsEquilibre = 5f;
 
+    [Header("Difficulte progressive")]
+    public float tempsMinChangementInitial = 7f;
+    public float tempsMinChangementFinal = 3f;
+    public float tempsMaxChangementInitial = 11f;
+    public float tempsMaxChangementFinal = 5f;
+
+    [Header("OSC")]
+    public OSCTransmitter oscTransmitter;
+
     private enum SensRotation { Horaire, AntiHoraire }
     private SensRotation sensActuel = SensRotation.Horaire;
     private float angleJoystickPrecedent = 0f;
@@ -32,8 +42,7 @@ public class StationTourbillonFeedback : MonoBehaviour
         // sens initial aléatoire
         sensActuel = Random.Range(0, 2) == 0 ? SensRotation.Horaire : SensRotation.AntiHoraire;
 
-        // temps requis aléatoire (entier entre 1 et 5)
-        tempsRequis = Random.Range((int)tempsMinAvantChangement, (int)tempsMaxAvantChangement + 1);
+        ActualiserTempsRequis();
 
         UpdateFlecheDirection();
 
@@ -117,14 +126,27 @@ public class StationTourbillonFeedback : MonoBehaviour
         // décrémentation lente si pas de rotation
         if (Mathf.Abs(deltaAngle) < 0.5f)
         {
-            accumulateurRotation = Mathf.Max(0, accumulateurRotation - Time.deltaTime * 20f);
+            accumulateurRotation = Mathf.Max(0, accumulateurRotation - Time.deltaTime * 140f);
 
-            // cacher cercle si revenu à 0
-            if (accumulateurRotation <= 0 && cercleProgressionActif)
+            if (cercleProgressionActif && cercleProgression != null)
             {
-                cercleProgressionActif = false;
-                if (cercleProgression != null)
+                float rotationTotaleRequisePourScale = rotationRequiseParSeconde * tempsRequis;
+                float prog = Mathf.Clamp01(accumulateurRotation / rotationTotaleRequisePourScale);
+
+                float scaleFacteur = Mathf.Lerp(0.5f, 1.5f, prog);
+                cercleProgression.localScale = scaleInitialCercleProgression * scaleFacteur;
+
+                Image cercleImage = cercleProgression.GetComponent<Image>();
+                if (cercleImage != null)
                 {
+                    Color couleur = cercleImage.color;
+                    couleur.a = Mathf.Lerp(0f, 0.8f, prog);
+                    cercleImage.color = couleur;
+                }
+
+                if (accumulateurRotation <= 0)
+                {
+                    cercleProgressionActif = false;
                     cercleProgression.gameObject.SetActive(false);
                 }
             }
@@ -133,13 +155,7 @@ public class StationTourbillonFeedback : MonoBehaviour
         // sauvegarder angle précédent
         angleJoystickPrecedent = angleJoystickActuel;
 
-        if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
-        {
-            if (!EstEnEquilibre() && StabilityManager.Instance != null)
-            {
-                StabilityManager.Instance.PerdreStabiliteParSeconde(perteStabiliteHorsEquilibre, "Tourbillon hors équilibre");
-            }
-        }
+        EnvoyerOSCAngle();
     }
 
     public void UpdateJoystick(int faderX, int faderY)
@@ -169,7 +185,7 @@ public class StationTourbillonFeedback : MonoBehaviour
         sensActuel = (sensActuel == SensRotation.Horaire) ? SensRotation.AntiHoraire : SensRotation.Horaire;
 
         // nouveau temps requis
-        tempsRequis = Random.Range((int)tempsMinAvantChangement, (int)tempsMaxAvantChangement + 1);
+        ActualiserTempsRequis();
 
         UpdateFlecheDirection();
         accumulateurRotation = 0f;
@@ -184,6 +200,20 @@ public class StationTourbillonFeedback : MonoBehaviour
         Debug.Log($"TOURBILLON : ✓✓✓ FLIP ! Nouveau sens = {sensActuel}, Rotation requise = {rotationRequiseParSeconde * tempsRequis}° sur {tempsRequis}s");
     }
 
+    void ActualiserTempsRequis()
+    {
+        if (GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel())
+        {
+            float d = GameManager.Instance.GetProgressionDifficulte();
+            float minT = Mathf.Lerp(tempsMinChangementInitial, tempsMinChangementFinal, d);
+            float maxT = Mathf.Lerp(tempsMaxChangementInitial, tempsMaxChangementFinal, d);
+            tempsRequis = Random.Range((int)minT, (int)maxT + 1);
+        }
+        else
+        {
+            tempsRequis = Random.Range((int)tempsMinAvantChangement, (int)tempsMaxAvantChangement + 1);
+        }
+    }
     void UpdateFlecheDirection()
     {
         if (flecheDirection != null)
@@ -202,5 +232,14 @@ public class StationTourbillonFeedback : MonoBehaviour
     public bool EstEnEquilibre()
     {
         return accumulateurRotation > (rotationRequiseParSeconde * 1f);
+    }
+
+    void EnvoyerOSCAngle()
+    {
+        if (oscTransmitter == null) return;
+
+        var message = new OSCMessage("/tourbillon/angle");
+        message.AddValue(OSCValue.Float(angleJoystickActuel));
+        oscTransmitter.Send(message);
     }
 }
