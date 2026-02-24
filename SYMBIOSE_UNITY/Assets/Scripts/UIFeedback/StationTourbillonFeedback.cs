@@ -36,9 +36,12 @@ public class StationTourbillonFeedback : MonoBehaviour
     private float tempsRequis = 2f;
     private Vector3 scaleInitialCercleProgression;
     private bool cercleProgressionActif = false;
+    [HideInInspector]
+    public float dernierTempsReussite = 0f;
 
     void Start()
     {
+        dernierTempsReussite = Time.time;
         // sens initial aléatoire
         sensActuel = Random.Range(0, 2) == 0 ? SensRotation.Horaire : SensRotation.AntiHoraire;
 
@@ -181,6 +184,7 @@ public class StationTourbillonFeedback : MonoBehaviour
 
     void ChangerSens()
     {
+        dernierTempsReussite = Time.time;
         // inverser le sens
         sensActuel = (sensActuel == SensRotation.Horaire) ? SensRotation.AntiHoraire : SensRotation.Horaire;
 

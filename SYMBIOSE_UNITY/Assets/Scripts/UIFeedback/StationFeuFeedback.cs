@@ -22,9 +22,12 @@ public class StationFeuFeedback : MonoBehaviour
     private float chronoChangement = 0f;
     private bool enEquilibre = false;
     private Vector3 scaleInitialBarre; // scale initial de la barre
+    [HideInInspector]
+    public float dernierTempsReussite = 0f;
 
     void Start()
     {
+        dernierTempsReussite = Time.time;
         // angle cible initial
         angleCibleActuel = Random.Range(angleCibleMin, angleCibleMax);
         UpdateKnobCibleRotation();
@@ -130,6 +133,7 @@ public class StationFeuFeedback : MonoBehaviour
 
     void DeplacerCible()
     {
+        dernierTempsReussite = Time.time;
         // nouvelle cible aléatoire
         angleCibleActuel = Random.Range(angleCibleMin, angleCibleMax);
         UpdateKnobCibleRotation();

@@ -248,5 +248,10 @@ public class StabilityManager : MonoBehaviour
         {
             vignetteAlerte.gameObject.SetActive(false);
         }
+        if (jaugeStabilite != null && stabiliteActuelle < seuilAlerte)
+        {
+            float shake = Mathf.Sin(Time.time * 20f) * 2f * (1f - stabiliteActuelle / seuilAlerte);
+            jaugeStabilite.GetComponent<RectTransform>().anchoredPosition = new Vector2(shake, 0f);
+        }
     }
 }

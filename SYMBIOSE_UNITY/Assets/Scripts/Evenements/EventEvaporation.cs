@@ -622,7 +622,15 @@ public class EventEvaporation : MonoBehaviour
         {
             colorAdjustments.saturation.value = saturationInitiale;
         }
-
+        // forcer refresh couleur selon derniere key
+        if (meshEau != null)
+        {
+            MeshRenderer mr = meshEau.GetComponent<MeshRenderer>();
+            if (mr != null)
+            {
+                mr.material = meshEau.meshMaterial;
+            }
+        }
         EnvoyerOSCLumiere(false);
     }
 

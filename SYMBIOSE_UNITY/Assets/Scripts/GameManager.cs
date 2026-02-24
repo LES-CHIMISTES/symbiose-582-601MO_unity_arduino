@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -12,6 +13,9 @@ public class GameManager : MonoBehaviour
     public UnityEvent OnGameOver;
     [Header("OSC")]
     public GameOverUI gameOverUI;
+
+    [Header("UI Timer")]
+    public TextMeshProUGUI texteTimer;
 
     [Header("Timer")]
     public float tempsEcoule = 0f;
@@ -56,6 +60,10 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         DemarrerTutoriel();
+        if (texteTimer != null)
+        {
+            texteTimer.gameObject.SetActive(false);
+        }
     }
 
     void Update()
@@ -63,6 +71,10 @@ public class GameManager : MonoBehaviour
         if (timerActif)
         {
             tempsEcoule += Time.deltaTime;
+        }
+        if (texteTimer != null)
+        {
+            texteTimer.text = FormatTemps(tempsEcoule);
         }
     }
 
@@ -82,6 +94,10 @@ public class GameManager : MonoBehaviour
     public void TerminerTutoriel()
     {
         timerActif = true;
+        if (texteTimer != null)
+        {
+            texteTimer.gameObject.SetActive(true);
+        }
         tempsEcoule = 0f;
         OnTutorialComplete?.Invoke();
         Invoke(nameof(DemarrerPhasePrincipale), 1f);
@@ -101,6 +117,10 @@ public class GameManager : MonoBehaviour
 
         phaseActuelle = GamePhase.GameOver;
         timerActif = false;
+        if (texteTimer != null)
+        {
+            texteTimer.gameObject.SetActive(false);
+        }
         enGameOver = true;
 
         OnGameOver?.Invoke();

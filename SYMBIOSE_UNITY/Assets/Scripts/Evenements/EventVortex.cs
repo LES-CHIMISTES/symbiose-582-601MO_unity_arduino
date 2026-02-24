@@ -386,6 +386,13 @@ public class EventVortex : MonoBehaviour
         if (cercleCibleFond != null)
         {
             Color cible = curseurDansCible ? couleurCibleDedans : couleurCibleDehors;
+
+            if (!curseurDansCible)
+            {
+                float blink = Mathf.Sin(Time.time * 6f) * 0.5f + 0.5f;
+                cible.a = Mathf.Lerp(0.1f, 0.5f, blink);
+            }
+
             cercleCibleFond.color = Color.Lerp(cercleCibleFond.color, cible, Time.deltaTime * 10f);
         }
 

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using TMPro;
 using System.Collections;
+using UnityEngine.UI;
 
 public class TutorialUI : MonoBehaviour
 {
@@ -14,6 +15,16 @@ public class TutorialUI : MonoBehaviour
     public float offsetY = 30f; // décalage vertical
     public float dureeFade = 0.5f;
 
+    [Header("Images Tutoriel (2 par etape)")]
+    public Image[] imagesEtape1;    // 2 images pour eau
+    public Image[] imagesEtape2;    // 2 images pour feu
+    public Image[] imagesEtape3;    // 2 images pour poudres
+    public Image[] imagesEtape4;    // 2 images pour tourbillon
+    public float intervalleAlternance = 1f;
+
+    private Coroutine animationImageEnCours = null;
+    private Image[][] toutesImages;
+
     [Header("Couleurs")]
     public Color couleurActive = Color.white;
     public Color couleurComplete = new Color(0f, 1f, 0f, 1f);
@@ -22,15 +33,10 @@ public class TutorialUI : MonoBehaviour
     private Vector2[] positionsInitiales;
     private string[] instructionsBase = new string[]
     {
-        "Remplissez le niveau d'eau",
-        "Allumez le feu à la bonne intensité",
-        "Ajoutez des poudres selon la couleur demandée",
-        "Brassez la potion dans le sens indiqué"
-        /* si t'as le temps faire en sorte que y'aille des checkbox unchecked avant en préfixe 
-        "☐ Remplissez le niveau d'eau",
-        "☐ Allumez le feu à la bonne intensité",
-        "☐ Ajoutez des poudres selon la couleur demandée",
-        "☐ Brassez la potion dans le sens indiqué"*/
+    "1. Remplissez le niveau d'eau par rapport à la cible jaune",
+    "2. Allumez le feu à la bonne intensité",
+    "3. Ajoutez des poudres selon la couleur demandée",
+    "4. Brassez la potion dans le sens indiqué"
     };
 
     void Start()
@@ -62,6 +68,14 @@ public class TutorialUI : MonoBehaviour
                 }
             }
         }
+
+        toutesImages = new Image[][] { imagesEtape1, imagesEtape2, imagesEtape3, imagesEtape4 };
+
+        // cacher toutes les images
+        for (int i = 0; i < toutesImages.Length; i++)
+        {
+            CacherImagesEtape(i);
+        }
     }
 
     public void ActiverEtape(int index)
@@ -71,20 +85,48 @@ public class TutorialUI : MonoBehaviour
         // Fade in avec animation
         StartCoroutine(FadeInTexte(index));
         
+        
+
+        // arreter animation precedente
+        if (animationImageEnCours != null)
+        {
+            StopCoroutine(animationImageEnCours);
+        }
+
+        // cacher images etape precedente
+        if (index > 0)
+        {
+            CacherImagesEtape(index - 1);
+        }
+
+        // demarrer animation images
+        animationImageEnCours = StartCoroutine(AnimerImages(index));
+
         Debug.Log($"TUTORIAL UI : Étape {index + 1} activée");
     }
 
     public void CompleterEtape(int index)
     {
         if (index < 0 || index >= textes.Length || textes[index] == null) return;
-        
+
         // Ajouter checkmark et changer couleur
         textes[index].text = instructionsBase[index];
         textes[index].color = couleurComplete;
-        
+
+        // arreter animation images
+        if (animationImageEnCours != null)
+        {
+            StopCoroutine(animationImageEnCours);
+            animationImageEnCours = null;
+        }
+        CacherImagesEtape(index);
+
+
         // Fade out après 1 seconde
         StartCoroutine(FadeOutTexte(index, 1f));
-        
+
+
+
         Debug.Log($"TUTORIAL UI : Étape {index + 1} complétée");
     }
 
@@ -159,5 +201,43 @@ public class TutorialUI : MonoBehaviour
     {
         gameObject.SetActive(false);
         Debug.Log("TUTORIAL UI : UI cachée, phase principale active");
+    }
+
+    IEnumerator AnimerImages(int index)
+    {
+        if (index < 0 || index >= toutesImages.Length) yield break;
+
+        Image[] images = toutesImages[index];
+        if (images == null || images.Length < 2) yield break;
+
+        // activer la premiere, cacher la deuxieme
+        if (images[0] != null) images[0].gameObject.SetActive(true);
+        if (images[1] != null) images[1].gameObject.SetActive(false);
+
+        int frameActuelle = 0;
+
+        while (true)
+        {
+            yield return new WaitForSeconds(intervalleAlternance);
+
+            // alterner
+            frameActuelle = 1 - frameActuelle;
+
+            if (images[0] != null) images[0].gameObject.SetActive(frameActuelle == 0);
+            if (images[1] != null) images[1].gameObject.SetActive(frameActuelle == 1);
+        }
+    }
+
+    void CacherImagesEtape(int index)
+    {
+        if (index < 0 || index >= toutesImages.Length) return;
+
+        Image[] images = toutesImages[index];
+        if (images == null) return;
+
+        foreach (Image img in images)
+        {
+            if (img != null) img.gameObject.SetActive(false);
+        }
     }
 }

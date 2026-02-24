@@ -27,14 +27,16 @@ public class StationEauFeedback : MonoBehaviour
     private float chronoMaintien = 0f;
     private bool enEquilibre = false;
     private Vector3 scaleInitialBarre;
-
+    private float blinkChrono = 0f;
     private RectTransform fillRect;
     private RectTransform fillAreaRect;
     private float hauteurCible = 0f;
-
+    [HideInInspector]
+    public float dernierTempsReussite = 0f;
 
     void Start()
     {
+        dernierTempsReussite = Time.time;
         // Trouver les composants Fill et Fill Area
         if (jaugeEau != null)
         {
@@ -80,6 +82,20 @@ public class StationEauFeedback : MonoBehaviour
         if (jaugeEau != null)
         {
             jaugeEau.value = niveauEauActuel;
+        }
+
+        // clignotement cible
+        if (cibleEau != null)
+        {
+            blinkChrono += Time.deltaTime;
+            float alpha = Mathf.Lerp(0.4f, 1f, (Mathf.Sin(blinkChrono * 4f) + 1f) / 2f);
+            Image cibleImage = cibleEau.GetComponent<Image>();
+            if (cibleImage != null)
+            {
+                Color c = cibleImage.color;
+                c.a = alpha;
+                cibleImage.color = c;
+            }
         }
 
         // IMPORTANT : Comparer avec valeurCiblePourComparaison au lieu de positionCibleActuelle
@@ -161,6 +177,8 @@ public class StationEauFeedback : MonoBehaviour
 
     void DeplacerCible()
     {
+        dernierTempsReussite = Time.time;
+
         if (versementController != null)
         {
             versementController.Verser();

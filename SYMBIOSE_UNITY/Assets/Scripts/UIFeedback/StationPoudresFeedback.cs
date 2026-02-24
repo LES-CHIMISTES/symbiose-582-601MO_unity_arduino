@@ -44,9 +44,12 @@ public class StationPoudresFeedback : MonoBehaviour
     private bool enAnimation = false;
     private Vector3 scaleInitialCercle;
     private Coroutine animationEnCours = null;
+    [HideInInspector]
+    public float dernierTempsReussite = 0f;
 
     void Start()
     {
+        dernierTempsReussite = Time.time;
         tempsTotalMax = delaiAvantFade + dureeFade;
 
         if (cercleCouleur != null)
@@ -99,6 +102,7 @@ public class StationPoudresFeedback : MonoBehaviour
         {
             Debug.Log("POUDRES : bon bouton");
             bonBoutonAppuyeRecemment = true;
+            dernierTempsReussite = Time.time;
 
             // demarrer et changer couleur du flux
             if (fluxPoudre != null)

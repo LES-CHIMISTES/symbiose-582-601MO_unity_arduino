@@ -692,7 +692,7 @@ public class EventGel : MonoBehaviour
     {
         if (potionRenderer != null && meshEau != null)
         {
-            potionRenderer.material.color = meshEau.meshMaterial.color;
+            potionRenderer.material = meshEau.meshMaterial;
         }
 
         if (meshsGel != null)
