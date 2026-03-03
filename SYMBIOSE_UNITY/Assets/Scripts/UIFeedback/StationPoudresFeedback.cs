@@ -10,14 +10,17 @@ public class StationPoudresFeedback : MonoBehaviour
     [Header("UI")]
     public Image cercleCouleur;
     public Image overlayRouge;
+    [Header("Flash inactivite")]
+    public Image overlayInactivite;
+    public float delaiFlash = 4f;
 
     [Header("Couleurs")]
     public Color couleurVerte = new Color(0f, 1f, 0f);
     public Color couleurBleue = new Color(0f, 0f, 1f);
     public Color couleurBlanche = Color.white;
 
-    [Header("Flux poudre")]
-    public FluxPoudreController fluxPoudre;
+    [Header("Animation pincee")]
+    public PinceeController pinceeController;
 
     [Header("Difficulte progressive")]
     public float delaiAvantFadeInitial = 1f;
@@ -49,6 +52,10 @@ public class StationPoudresFeedback : MonoBehaviour
 
     void Start()
     {
+        if (overlayInactivite != null)
+        {
+            overlayInactivite.enabled = false;
+        }
         dernierTempsReussite = Time.time;
         tempsTotalMax = delaiAvantFade + dureeFade;
 
@@ -67,7 +74,26 @@ public class StationPoudresFeedback : MonoBehaviour
 
     void Update()
     {
+        // flash inactivite (toujours verifier, meme pendant animation)
+        if (overlayInactivite != null && GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel() && !GameManager.Instance.enGameOver)
+        {
+            float tempsInactif = Time.time - dernierTempsReussite;
+            if (tempsInactif >= delaiFlash)
+            {
+                overlayInactivite.enabled = true;
+                float pulse = Mathf.Sin(Time.time * 3f) * 0.5f + 0.5f;
+                Color c = overlayInactivite.color;
+                c.a = pulse * 1f;
+                overlayInactivite.color = c;
+            }
+            else
+            {
+                overlayInactivite.enabled = false;
+            }
+        }
+
         if (enAnimation) return;
+
 
         chronoTotal += Time.deltaTime;
 
@@ -104,20 +130,10 @@ public class StationPoudresFeedback : MonoBehaviour
             bonBoutonAppuyeRecemment = true;
             dernierTempsReussite = Time.time;
 
-            // demarrer et changer couleur du flux
-            if (fluxPoudre != null)
+            // lancer animation pincee
+            if (pinceeController != null)
             {
-                if (!fluxPoudre.EstActif())
-                {
-                    fluxPoudre.Demarrer();
-                }
-                fluxPoudre.ChangerCouleur(keyNumber);
-            }
-
-            Debug.Log($"POUDRES : fluxPoudre null = {fluxPoudre == null}");
-            if (fluxPoudre != null)
-            {
-                Debug.Log($"POUDRES : fluxPoudre actif = {fluxPoudre.EstActif()}, gameObject actif = {fluxPoudre.gameObject.activeSelf}");
+                pinceeController.Pincer(keyNumber);
             }
 
             LancerAnimation(AnimationReussite());

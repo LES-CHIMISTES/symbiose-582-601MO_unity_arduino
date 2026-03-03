@@ -13,6 +13,9 @@ public class StationEauFeedback : MonoBehaviour
     public RectTransform barreTemps;
     [Header("Versement")]
     public VersementController versementController;
+    [Header("Flash inactivite")]
+    public Image overlayInactivite;
+    public float delaiFlash = 4f;
 
     [Header("Params")]
     public float tolerance = 0.08f;
@@ -36,6 +39,11 @@ public class StationEauFeedback : MonoBehaviour
 
     void Start()
     {
+        if (overlayInactivite != null)
+        {
+            overlayInactivite.enabled = false;
+        }
+
         dernierTempsReussite = Time.time;
         // Trouver les composants Fill et Fill Area
         if (jaugeEau != null)
@@ -166,6 +174,24 @@ public class StationEauFeedback : MonoBehaviour
                 }
 
                 Debug.Log("EAU : Sorti de l'équilibre");
+            }
+        }
+
+        // flash inactivite
+        if (overlayInactivite != null && GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel() && !GameManager.Instance.enGameOver)
+        {
+            float tempsInactif = Time.time - dernierTempsReussite;
+            if (tempsInactif >= delaiFlash)
+            {
+                overlayInactivite.enabled = true;
+                float pulse = Mathf.Sin(Time.time * 3f) * 0.5f + 0.5f;
+                Color c = overlayInactivite.color;
+                c.a = pulse * 1f;
+                overlayInactivite.color = c;
+            }
+            else
+            {
+                overlayInactivite.enabled = false;
             }
         }
     }

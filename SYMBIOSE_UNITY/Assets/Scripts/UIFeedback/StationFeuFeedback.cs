@@ -7,6 +7,9 @@ public class StationFeuFeedback : MonoBehaviour
     public RectTransform knobDynamique; // knob qui suit angle
     public RectTransform knobCible; // knob transparent avec indicateur rouge
     public RectTransform barreTemps; // barre horizontale qui scale (RectTransform, pas Image)
+    [Header("Flash inactivite")]
+    public Image overlayInactivite;
+    public float delaiFlash = 4f;
 
     [Header("params")]
     public float angleCibleMin = -180f;
@@ -27,6 +30,10 @@ public class StationFeuFeedback : MonoBehaviour
 
     void Start()
     {
+        if (overlayInactivite != null)
+        {
+            overlayInactivite.enabled = false;
+        }
         dernierTempsReussite = Time.time;
         // angle cible initial
         angleCibleActuel = Random.Range(angleCibleMin, angleCibleMax);
@@ -112,6 +119,24 @@ public class StationFeuFeedback : MonoBehaviour
                         barreImage.color = couleur;
                     }
                 }
+            }
+        }
+
+        // flash inactivite
+        if (overlayInactivite != null && GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel() && !GameManager.Instance.enGameOver)
+        {
+            float tempsInactif = Time.time - dernierTempsReussite;
+            if (tempsInactif >= delaiFlash)
+            {
+                overlayInactivite.enabled = true;
+                float pulse = Mathf.Sin(Time.time * 3f) * 0.5f + 0.5f;
+                Color c = overlayInactivite.color;
+                c.a = pulse * 0.6f;
+                overlayInactivite.color = c;
+            }
+            else
+            {
+                overlayInactivite.enabled = false;
             }
         }
     }

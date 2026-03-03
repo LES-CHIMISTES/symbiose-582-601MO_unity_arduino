@@ -19,8 +19,8 @@ public class EventCristallisation : MonoBehaviour
     public RectTransform[] anneauxApproche; // taille 3
     public Image[] anneauxImage;            // taille 3
 
-    [Header("Flux poudre")]
-    public FluxPoudreController fluxPoudre;
+    [Header("Animation pincee")]
+    public PinceeController pinceeController;
 
     [Header("overlays erreur (ordre : bleu, vert, blanc)")]
     public Image[] overlaysErreur;          // taille 3, un par cercle
@@ -368,12 +368,10 @@ public class EventCristallisation : MonoBehaviour
         // bon bouton, bon timing
         appuiAccepteCeStep = true;
         anneauActif = false;
-
-        // changer couleur du flux
-        if (fluxPoudre != null)
+        if (pinceeController != null)
         {
             int keyDuCercle = IndexToKeyNumber(indexActuel);
-            fluxPoudre.ChangerCouleur(keyDuCercle);
+            pinceeController.Pincer(keyDuCercle);
         }
         if (AudioManager.Instance != null)
         {

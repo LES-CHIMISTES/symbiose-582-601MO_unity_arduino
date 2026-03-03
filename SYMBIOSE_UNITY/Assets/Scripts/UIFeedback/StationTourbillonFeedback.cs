@@ -9,6 +9,9 @@ public class StationTourbillonFeedback : MonoBehaviour
     public Image grandCercle; // cercle extérieur (zone)
     public RectTransform petitCercle; // cercle intérieur (position joystick)
     public RectTransform cercleProgression; // cercle de progression qui grandit
+    [Header("Flash inactivite")]
+    public Image overlayInactivite;
+    public float delaiFlash = 4f;
 
     [Header("Params")]
     public float rayonGrandCercle = 50f;
@@ -41,6 +44,11 @@ public class StationTourbillonFeedback : MonoBehaviour
 
     void Start()
     {
+        if (overlayInactivite != null)
+        {
+            overlayInactivite.enabled = false;
+        }
+
         dernierTempsReussite = Time.time;
         // sens initial aléatoire
         sensActuel = Random.Range(0, 2) == 0 ? SensRotation.Horaire : SensRotation.AntiHoraire;
@@ -154,7 +162,23 @@ public class StationTourbillonFeedback : MonoBehaviour
                 }
             }
         }
-
+        // flash inactivite
+        if (overlayInactivite != null && GameManager.Instance != null && !GameManager.Instance.EstEnTutoriel() && !GameManager.Instance.enGameOver)
+        {
+            float tempsInactif = Time.time - dernierTempsReussite;
+            if (tempsInactif >= delaiFlash)
+            {
+                overlayInactivite.enabled = true;
+                float pulse = Mathf.Sin(Time.time * 3f) * 0.5f + 0.5f;
+                Color c = overlayInactivite.color;
+                c.a = pulse * 0.4f;
+                overlayInactivite.color = c;
+            }
+            else
+            {
+                overlayInactivite.enabled = false;
+            }
+        }
         // sauvegarder angle précédent
         angleJoystickPrecedent = angleJoystickActuel;
 
