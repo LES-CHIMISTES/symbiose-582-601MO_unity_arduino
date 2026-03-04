@@ -13,6 +13,8 @@ public class GameOverUI : MonoBehaviour
     public TextMeshProUGUI texteMessage;
     public CanvasGroup canvasGroup; // Pour le fade
 
+    public TextMeshProUGUI texteMeilleurTemps;
+
     [Header("Paramètres")]
     public float delaiAvantFadeOut = 8f; // 8 secondes avant fade
     public float dureeFadeOut = 2f; // Durée du fade
@@ -78,6 +80,24 @@ public class GameOverUI : MonoBehaviour
             if (texteMessage != null)
             {
                 texteMessage.text = $"Événements résolus : {evenements}";
+            }
+        }
+
+        if (texteMeilleurTemps != null && GameManager.Instance != null)
+        {
+            float meilleur = GameManager.Instance.GetMeilleurTemps();
+            bool nouveauRecord = GameManager.Instance.tempsEcoule >= meilleur;
+
+            if (nouveauRecord)
+            {
+                texteMeilleurTemps.text = $"Nouveau record :\n{GameManager.Instance.FormatTemps(GameManager.Instance.tempsEcoule)} !";
+                texteMeilleurTemps.color = new Color(1f, 0.85f, 0f);
+                StartCoroutine(PulseRecord());
+            }
+            else
+            {
+                texteMeilleurTemps.text = $"Meilleur temps :\n{GameManager.Instance.FormatTemps(meilleur)}";
+                texteMeilleurTemps.color = Color.white;
             }
         }
 
@@ -178,5 +198,21 @@ public class GameOverUI : MonoBehaviour
         }
 
         Debug.Log("OSC : toutes les adresses remises a 0");
+    }
+
+    IEnumerator PulseRecord()
+    {
+        if (texteMeilleurTemps == null) yield break;
+
+        Vector3 scaleInitial = texteMeilleurTemps.rectTransform.localScale;
+
+        while (gameOverPanel.activeSelf)
+        {
+            float pulse = Mathf.Sin(Time.time * 3f) * 0.1f + 1f;
+            texteMeilleurTemps.rectTransform.localScale = scaleInitial * pulse;
+            yield return null;
+        }
+
+        texteMeilleurTemps.rectTransform.localScale = scaleInitial;
     }
 }

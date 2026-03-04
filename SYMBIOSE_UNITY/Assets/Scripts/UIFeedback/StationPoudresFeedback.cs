@@ -286,7 +286,6 @@ public class StationPoudresFeedback : MonoBehaviour
             nouvelleCouleur.a = 1f;
             cercleCouleur.color = nouvelleCouleur;
         }
-
         if (overlayRouge != null)
         {
             overlayRouge.gameObject.SetActive(false);

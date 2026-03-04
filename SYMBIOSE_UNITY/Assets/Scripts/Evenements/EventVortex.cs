@@ -505,6 +505,10 @@ public class EventVortex : MonoBehaviour
             AudioManager.Instance.JouerEventReussi();
         }
         StartCoroutine(FlashReussiteCoroutine());
+        if (ConfettiManager.Instance != null)
+        {
+            ConfettiManager.Instance.Exploser();
+        }
         DesactiverEffets();
 
         if (gameManager != null)

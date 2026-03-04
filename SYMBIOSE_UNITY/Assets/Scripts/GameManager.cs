@@ -17,6 +17,7 @@ public class GameManager : MonoBehaviour
     [Header("UI Timer")]
     public TextMeshProUGUI texteTimer;
 
+
     [Header("Timer")]
     public float tempsEcoule = 0f;
 
@@ -122,7 +123,7 @@ public class GameManager : MonoBehaviour
             texteTimer.gameObject.SetActive(false);
         }
         enGameOver = true;
-
+        VerifierMeilleurTemps();
         OnGameOver?.Invoke();
 
         Debug.Log($"GAME : game over, temps = {FormatTemps(tempsEcoule)}");
@@ -161,5 +162,22 @@ public class GameManager : MonoBehaviour
     public bool EstEnPhasePrincipale()
     {
         return phaseActuelle == GamePhase.PhasePrincipale;
+    }
+
+    public float GetMeilleurTemps()
+    {
+        return PlayerPrefs.GetFloat("MeilleurTemps", 0f);
+    }
+
+    public void VerifierMeilleurTemps()
+    {
+        float meilleur = GetMeilleurTemps();
+
+        if (tempsEcoule > meilleur)
+        {
+            PlayerPrefs.SetFloat("MeilleurTemps", tempsEcoule);
+            PlayerPrefs.Save();
+            Debug.Log($"GAME : nouveau record ! {FormatTemps(tempsEcoule)}");
+        }
     }
 }
