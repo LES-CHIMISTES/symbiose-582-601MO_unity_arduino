@@ -109,7 +109,7 @@ public class StationPoudresFeedback : MonoBehaviour
 
         if (chronoTotal >= tempsTotalMax)
         {
-            Debug.LogWarning("POUDRES : timeout echec");
+            
             bonBoutonAppuyeRecemment = false;
             ChangerCouleur();
         }
@@ -117,7 +117,7 @@ public class StationPoudresFeedback : MonoBehaviour
 
     public void AppuyerBouton(int keyNumber)
     {
-        Debug.Log($"POUDRES : bouton {keyNumber} appuye, attendu = {couleurAttendue}");
+        //Debug.Log($"POUDRES : bouton {keyNumber} appuye, attendu = {couleurAttendue}");
 
         EnvoyerOSCKey(keyNumber, true);
 
@@ -126,7 +126,7 @@ public class StationPoudresFeedback : MonoBehaviour
 
         if (keyNumber == couleurAttendue)
         {
-            Debug.Log("POUDRES : bon bouton");
+            //Debug.Log("POUDRES : bon bouton");
             bonBoutonAppuyeRecemment = true;
             dernierTempsReussite = Time.time;
             if (AudioManager.Instance != null)
@@ -143,7 +143,7 @@ public class StationPoudresFeedback : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"POUDRES : mauvais bouton, attendu = {couleurAttendue}, recu = {keyNumber}");
+            //Debug.LogWarning($"POUDRES : mauvais bouton, attendu = {couleurAttendue}, recu = {keyNumber}");
             bonBoutonAppuyeRecemment = false;
             LancerAnimation(AnimationEchec());
         }
@@ -151,7 +151,7 @@ public class StationPoudresFeedback : MonoBehaviour
 
     public void RelacherBouton(int keyNumber)
     {
-        Debug.Log($"POUDRES : Bouton {keyNumber} relache");
+        
         EnvoyerOSCKey(keyNumber, false);
     }
 
@@ -296,7 +296,7 @@ public class StationPoudresFeedback : MonoBehaviour
 
         chronoTotal = 0f;
 
-        Debug.Log($"POUDRES : nouvelle couleur = {couleurAttendue}");
+        //Debug.Log($"POUDRES : nouvelle couleur = {couleurAttendue}");
     }
 
     public bool EstEnEquilibre()

@@ -179,6 +179,11 @@ public class OSCInputManager : MonoBehaviour
             if (becherController != null)
             {
                 becherController.UpdateRotation(value, faderY);
+                Debug.Log($"BECHER : rotation faderX={value}, faderY={faderY}");
+            }
+            else
+            {
+                Debug.LogWarning("BECHER : becherController est NULL");
             }
 
             if (stationTourbillonFeedback != null)

@@ -12,13 +12,17 @@ public class StationTourbillonFeedback : MonoBehaviour
     [Header("Flash inactivite")]
     public Image overlayInactivite;
     public float delaiFlash = 4f;
-
+    [Header("Feedback visuel brassage")]
+    public Light lumiereBrassage;
+    public Color couleurBrassageCalme = new Color(0.2f, 0.5f, 1f);
+    public Color couleurBrassageIntense = new Color(0.5f, 0.2f, 1f);
+    public float intensiteMax = 2f;
     [Header("Params")]
     public float rayonGrandCercle = 50f;
     public float rotationRequiseParSeconde = 90f; // degrés de rotation par seconde requis
     public float tempsMinAvantChangement = 7f;
     public float tempsMaxAvantChangement = 11f;
-
+    private float intensiteBrassageLissee = 0f;
     [Header("Stabilité")]
     public float perteStabiliteHorsEquilibre = 5f;
 
@@ -178,6 +182,15 @@ public class StationTourbillonFeedback : MonoBehaviour
             {
                 overlayInactivite.enabled = false;
             }
+        }
+        // feedback lumiere brassage
+        if (lumiereBrassage != null)
+        {
+            float vitesseRotation = Mathf.Abs(deltaAngle);
+            intensiteBrassageLissee = Mathf.Lerp(intensiteBrassageLissee, vitesseRotation, Time.deltaTime * 8f);
+            float intensiteCible = Mathf.Clamp01(intensiteBrassageLissee / 3f) * intensiteMax;
+            lumiereBrassage.intensity = Mathf.Lerp(lumiereBrassage.intensity, intensiteCible, Time.deltaTime * 5f);
+            lumiereBrassage.color = Color.Lerp(couleurBrassageCalme, couleurBrassageIntense, lumiereBrassage.intensity / intensiteMax);
         }
         // sauvegarder angle précédent
         angleJoystickPrecedent = angleJoystickActuel;

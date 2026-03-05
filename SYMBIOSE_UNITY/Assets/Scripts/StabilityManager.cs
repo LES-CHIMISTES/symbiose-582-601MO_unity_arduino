@@ -14,7 +14,15 @@ public class StabilityManager : MonoBehaviour
     public StationFeuFeedback stationFeu;
     public StationPoudresFeedback stationPoudres;
     public StationTourbillonFeedback stationTourbillon;
-
+    [Header("Jauge 3D")]
+    public JaugeStabilite3D jauge3D;
+    [Header("Glow critique potion")]
+    public MeshRenderer potionGlowRenderer;
+    public Color couleurGlow = new Color(1f, 0.1f, 0.1f, 1f);
+    public float alphaGlowMax = 0.4f;
+    [Header("Light critique")]
+    public Light pointLightCritique;
+    public float intensiteLightMax = 0.09f;
     // =====================================================================
     // PARAMETRES STABILITE
     // =====================================================================
@@ -86,9 +94,11 @@ public class StabilityManager : MonoBehaviour
         {
             vignetteAlerte.gameObject.SetActive(false);
         }
-
+        if (potionGlowRenderer != null)
+        {
+            potionGlowRenderer.gameObject.SetActive(false);
+        }
         UpdateUI();
-
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnTutorialComplete.AddListener(Activer);
@@ -210,6 +220,7 @@ public class StabilityManager : MonoBehaviour
 
     void UpdateUI()
     {
+#if UNITY_EDITOR
         if (jaugeStabilite != null)
         {
             jaugeStabilite.value = stabiliteAffichee / stabiliteMax;
@@ -225,6 +236,11 @@ public class StabilityManager : MonoBehaviour
                 fillStabilite.color = Color.Lerp(couleurCritique, couleurDanger, (pct - 0.2f) / 0.3f);
             else
                 fillStabilite.color = couleurCritique;
+        }
+#endif
+        if (jauge3D != null)
+        {
+            jauge3D.Actualiser(stabiliteAffichee / stabiliteMax);
         }
     }
 
@@ -252,6 +268,46 @@ public class StabilityManager : MonoBehaviour
         {
             float shake = Mathf.Sin(Time.time * 20f) * 2f * (1f - stabiliteActuelle / seuilAlerte);
             jaugeStabilite.GetComponent<RectTransform>().anchoredPosition = new Vector2(shake, 0f);
+        }
+        if (potionGlowRenderer != null)
+        {
+            if (stabiliteActuelle < seuilAlerte && stabiliteActuelle > 0f)
+            {
+                float pulse = Mathf.Sin(Time.time * 7f);
+                potionGlowRenderer.gameObject.SetActive(pulse > 0f);
+            }
+            else
+            {
+                potionGlowRenderer.gameObject.SetActive(false);
+            }
+        }
+
+        if (pointLightCritique != null)
+        {
+            float pct = stabiliteAffichee / stabiliteMax;
+
+            // couleur selon stabilite (meme que jauge)
+            Color couleurLight;
+            if (pct > 0.5f)
+                couleurLight = Color.Lerp(couleurDanger, couleurSaine, (pct - 0.5f) * 2f);
+            else if (pct > 0.2f)
+                couleurLight = Color.Lerp(couleurCritique, couleurDanger, (pct - 0.2f) / 0.3f);
+            else
+                couleurLight = couleurCritique;
+
+            pointLightCritique.color = couleurLight;
+
+            // intensite : normale en temps normal, pulse quand critique
+            if (stabiliteActuelle < seuilAlerte && stabiliteActuelle > 0f)
+            {
+                float pulse = Mathf.Sin(Time.time * 5f) * 0.5f + 0.5f;
+                float intensiteCritique = (1f - (stabiliteActuelle / seuilAlerte));
+                pointLightCritique.intensity = Mathf.Lerp(intensiteLightMax * 0.3f, intensiteLightMax, intensiteCritique * pulse);
+            }
+            else
+            {
+                pointLightCritique.intensity = intensiteLightMax * 0.5f;
+            }
         }
     }
 }
