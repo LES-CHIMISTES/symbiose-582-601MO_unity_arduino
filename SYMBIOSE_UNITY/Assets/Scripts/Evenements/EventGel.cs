@@ -178,7 +178,10 @@ public class EventGel : MonoBehaviour
         {
             colonneFeu.alpha = 0.25f;
         }
-
+        if (ParticulesPotionController.Instance != null)
+        {
+            ParticulesPotionController.Instance.SetEtat("gel"); // ou "evaporation", "cristallisation", "vortex"
+        }
         Debug.Log($"EVENT GEL : demarre, {nbKnobsTotal} knobs");
     }
 
@@ -716,7 +719,10 @@ public class EventGel : MonoBehaviour
         {
             jaugeTemperature.gameObject.SetActive(false);
         }
-
+        if (ParticulesPotionController.Instance != null)
+        {
+            ParticulesPotionController.Instance.ResetNormal();
+        }
         if (patternContainer != null)
         {
             patternContainer.SetActive(false);

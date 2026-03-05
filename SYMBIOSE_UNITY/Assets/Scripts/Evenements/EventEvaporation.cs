@@ -221,7 +221,10 @@ public class EventEvaporation : MonoBehaviour
 
         // effets visuels 3d
         ActiverEffetsVisuels();
-
+        if (ParticulesPotionController.Instance != null)
+        {
+            ParticulesPotionController.Instance.SetEtat("evaporation"); // ou "evaporation", "cristallisation", "vortex"
+        }
         // desactiver feedback station eau normal
         if (stationEau != null)
         {
@@ -600,7 +603,10 @@ public class EventEvaporation : MonoBehaviour
         {
             eventEvaporationPanel.SetActive(false);
         }
-
+        if (ParticulesPotionController.Instance != null)
+        {
+            ParticulesPotionController.Instance.ResetNormal();
+        }
         if (stationEau != null)
         {
             stationEau.enabled = true;

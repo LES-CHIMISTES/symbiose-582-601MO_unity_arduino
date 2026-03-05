@@ -208,7 +208,10 @@ public class EventCristallisation : MonoBehaviour
             saturationInitiale = colorAdjustments.saturation.value;
             colorAdjustments.saturation.value = saturationMinimale;
         }
-
+        if (ParticulesPotionController.Instance != null)
+        {
+            ParticulesPotionController.Instance.SetEtat("cristallisation"); // ou "evaporation", "cristallisation", "vortex"
+        }
         // effets visuels 3d
         ActiverEffetsVisuels();
 
@@ -689,7 +692,10 @@ public class EventCristallisation : MonoBehaviour
         {
             eventCristallisationPanel.SetActive(false);
         }
-
+        if (ParticulesPotionController.Instance != null)
+        {
+            ParticulesPotionController.Instance.ResetNormal();
+        }
         if (stationPoudres != null)
         {
             stationPoudres.enabled = true;

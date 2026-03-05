@@ -129,7 +129,10 @@ public class StationPoudresFeedback : MonoBehaviour
             Debug.Log("POUDRES : bon bouton");
             bonBoutonAppuyeRecemment = true;
             dernierTempsReussite = Time.time;
-
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.JouerKeyPress();
+            }
             // lancer animation pincee
             if (pinceeController != null)
             {

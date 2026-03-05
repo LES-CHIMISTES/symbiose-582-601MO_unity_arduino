@@ -262,10 +262,7 @@ public class OSCInputManager : MonoBehaviour
                     stationPoudresFeedback.AppuyerBouton(1);
                 }
             }
-            if (!key1Enfonce && AudioManager.Instance != null)
-            {
-                AudioManager.Instance.JouerKeyPress();
-            }
+
             key1Enfonce = true;
         }
         else if (value == 0)
@@ -299,10 +296,7 @@ public class OSCInputManager : MonoBehaviour
                     stationPoudresFeedback.AppuyerBouton(2);
                 }
             }
-            if (!key2Enfonce && AudioManager.Instance != null)
-            {
-                AudioManager.Instance.JouerKeyPress();
-            }
+
             key2Enfonce = true;
         }
         else if (value == 0)
@@ -336,10 +330,7 @@ public class OSCInputManager : MonoBehaviour
                     stationPoudresFeedback.AppuyerBouton(3);
                 }
             }
-            if (!key3Enfonce && AudioManager.Instance != null)
-            {
-                AudioManager.Instance.JouerKeyPress();
-            }
+
             key3Enfonce = true;
         }
         else if (value == 0)

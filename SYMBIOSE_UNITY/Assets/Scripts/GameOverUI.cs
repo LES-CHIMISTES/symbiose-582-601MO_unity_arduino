@@ -14,10 +14,14 @@ public class GameOverUI : MonoBehaviour
     public CanvasGroup canvasGroup; // Pour le fade
 
     public TextMeshProUGUI texteMeilleurTemps;
-
+    [Header("Explosion")]
+    public ExplosionBecher explosionBecher;
+    [Header("Camera Shake")]
+    public CameraShakeGameOver cameraShake;
     [Header("Paramètres")]
     public float delaiAvantFadeOut = 8f; // 8 secondes avant fade
     public float dureeFadeOut = 2f; // Durée du fade
+
 
     public GameObject[] uiManipulationsContinues;
     [Header("OSC")]
@@ -60,8 +64,19 @@ public class GameOverUI : MonoBehaviour
 
         gameOverPanel.SetActive(true);
         CacherUIManipulations();
+        if (explosionBecher != null)
+        {
+            explosionBecher.Exploser();
+        }
+        if (cameraShake != null)
+        {
+            cameraShake.DemarrerShake();
+        }
         EnvoyerOSCGameOver(true);
-
+        if (ParticulesPotionController.Instance != null)
+        {
+            ParticulesPotionController.Instance.SetEtat("gameover");
+        }
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 1f;

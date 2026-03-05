@@ -222,7 +222,10 @@ public class EventVortex : MonoBehaviour
         {
             colonneTourbillon.alpha = 0.25f;
         }
-
+        if (ParticulesPotionController.Instance != null)
+        {
+            ParticulesPotionController.Instance.SetEtat("vortex"); // ou "evaporation", "cristallisation", "vortex"
+        }
         if (GameManager.Instance != null)
         {
             float d = GameManager.Instance.GetProgressionDifficulte();
@@ -561,7 +564,10 @@ public class EventVortex : MonoBehaviour
         {
             eventVortexPanel.SetActive(false);
         }
-
+        if (ParticulesPotionController.Instance != null)
+        {
+            ParticulesPotionController.Instance.ResetNormal();
+        }
         if (meshTornade != null)
         {
             meshTornade.localPosition = tornadePosInitiale;
