@@ -14,7 +14,8 @@ public class TutorialUI : MonoBehaviour
     [Header("Animation")]
     public float offsetY = 30f; // décalage vertical
     public float dureeFade = 0.5f;
-
+    [Header("Animation images")]
+    public CanvasGroup imagesCanvasGroup;
     [Header("Images Tutoriel (2 par etape)")]
     public Image[] imagesEtape1;    // 2 images pour eau
     public Image[] imagesEtape2;    // 2 images pour feu
@@ -75,6 +76,10 @@ public class TutorialUI : MonoBehaviour
         for (int i = 0; i < toutesImages.Length; i++)
         {
             CacherImagesEtape(i);
+        }
+        if (imagesCanvasGroup != null)
+        {
+            StartCoroutine(PulseImages());
         }
     }
 
@@ -238,6 +243,17 @@ public class TutorialUI : MonoBehaviour
         foreach (Image img in images)
         {
             if (img != null) img.gameObject.SetActive(false);
+        }
+    }
+    IEnumerator PulseImages()
+    {
+        while (true)
+        {
+            if (imagesCanvasGroup != null)
+            {
+                imagesCanvasGroup.alpha = Mathf.Lerp(0.75f, 1f, (Mathf.Sin(Time.time * 2f) + 1f) / 2f);
+            }
+            yield return null;
         }
     }
 }

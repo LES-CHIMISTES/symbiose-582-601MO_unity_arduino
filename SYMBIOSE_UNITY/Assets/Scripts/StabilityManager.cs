@@ -23,6 +23,10 @@ public class StabilityManager : MonoBehaviour
     [Header("Light critique")]
     public Light pointLightCritique;
     public float intensiteLightMax = 0.09f;
+    [Header("Grace period")]
+    public float gracePeriodInitiale = 5f;
+    public float gracePeriodFinale = 2f;
+    private float gracePeriodTimer = 0f;
     // =====================================================================
     // PARAMETRES STABILITE
     // =====================================================================
@@ -119,7 +123,14 @@ public class StabilityManager : MonoBehaviour
     {
         if (!actif) return;
         if (GameManager.Instance != null && GameManager.Instance.enGameOver) return;
-
+        // grace period
+        if (gracePeriodTimer > 0f)
+        {
+            gracePeriodTimer -= Time.deltaTime;
+            stabiliteAffichee = Mathf.Lerp(stabiliteAffichee, stabiliteActuelle, Time.deltaTime * 8f);
+            UpdateUI();
+            return;
+        }
         // compter stations en equilibre / hors equilibre
         int stationsEnEquilibre = 0;
         int stationsHorsEquilibre = 0;
@@ -202,6 +213,7 @@ public class StabilityManager : MonoBehaviour
 
         stabiliteActuelle = Mathf.Min(stabiliteMax, stabiliteActuelle + bonusEvenementResolu);
         Debug.Log($"STABILITE : +{bonusEvenementResolu} (evenement resolu) -> {stabiliteActuelle:F0}%");
+        DemarrerGracePeriod();
     }
 
     public float GetPourcentage()
@@ -309,5 +321,15 @@ public class StabilityManager : MonoBehaviour
                 pointLightCritique.intensity = intensiteLightMax * 0.5f;
             }
         }
+    }
+    public void DemarrerGracePeriod()
+    {
+        float d = 0f;
+        if (GameManager.Instance != null)
+        {
+            d = GameManager.Instance.GetProgressionDifficulte();
+        }
+        gracePeriodTimer = Mathf.Lerp(gracePeriodInitiale, gracePeriodFinale, d);
+        Debug.Log($"STABILITE : grace period {gracePeriodTimer:F1}s");
     }
 }

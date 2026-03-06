@@ -104,7 +104,7 @@ public class EventGel : MonoBehaviour
     void DemarrerEvenement()
     {
         phaseActuelle = PhaseGel.Phase1;
-        niveauFroid = 100f;
+        niveauFroid = 0f;
         chronoPhase1 = 0f;
         etapeActuelle = 0;
         valeurPotentiometrePrecedente = valeurPotentiometre;
@@ -296,8 +296,8 @@ public class EventGel : MonoBehaviour
         if (valeurPotentiometre <= seuilIntensiteMax)
         {
             chronoPhase1 += Time.deltaTime;
-            niveauFroid -= 10f * Time.deltaTime;
-            niveauFroid = Mathf.Max(0f, niveauFroid);
+            niveauFroid += 10f * Time.deltaTime;
+            niveauFroid = Mathf.Min(100f, niveauFroid);
 
             if (chronoPhase1 >= dureePhase1)
             {
@@ -473,8 +473,8 @@ public class EventGel : MonoBehaviour
 
         if (Mathf.Abs(valeurPotentiometre - valeurPotentiometrePrecedente) < 10)
         {
-            niveauFroid += vitesseGelInaction * Time.deltaTime;
-            niveauFroid = Mathf.Min(100f, niveauFroid);
+            niveauFroid -= vitesseGelInaction * Time.deltaTime;
+            niveauFroid = Mathf.Max(0f, niveauFroid);
         }
 
         valeurPotentiometrePrecedente = valeurPotentiometre;
@@ -560,8 +560,8 @@ public class EventGel : MonoBehaviour
             }
         }
 
-        niveauFroid -= 100f / nbKnobsTotal;
-        niveauFroid = Mathf.Max(0f, niveauFroid);
+        niveauFroid += 100f / nbKnobsTotal;
+        niveauFroid = Mathf.Min(100f, niveauFroid);
 
         etapeActuelle++;
         chronoEtape = 0f;

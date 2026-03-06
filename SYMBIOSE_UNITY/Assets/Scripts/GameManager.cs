@@ -15,7 +15,7 @@ public class GameManager : MonoBehaviour
     public GameOverUI gameOverUI;
 
     [Header("UI Timer")]
-    public TextMeshProUGUI texteTimer;
+    public TMPro.TMP_Text texteTimer;
 
 
     [Header("Timer")]
@@ -63,7 +63,7 @@ public class GameManager : MonoBehaviour
         DemarrerTutoriel();
         if (texteTimer != null)
         {
-            texteTimer.gameObject.SetActive(false);
+            texteTimer.text = "0:00";
         }
     }
 
@@ -95,10 +95,6 @@ public class GameManager : MonoBehaviour
     public void TerminerTutoriel()
     {
         timerActif = true;
-        if (texteTimer != null)
-        {
-            texteTimer.gameObject.SetActive(true);
-        }
         tempsEcoule = 0f;
         OnTutorialComplete?.Invoke();
         Invoke(nameof(DemarrerPhasePrincipale), 1f);
@@ -118,10 +114,6 @@ public class GameManager : MonoBehaviour
 
         phaseActuelle = GamePhase.GameOver;
         timerActif = false;
-        if (texteTimer != null)
-        {
-            texteTimer.gameObject.SetActive(false);
-        }
         enGameOver = true;
         VerifierMeilleurTemps();
         OnGameOver?.Invoke();
@@ -146,7 +138,7 @@ public class GameManager : MonoBehaviour
     {
         int minutes = Mathf.FloorToInt(temps / 60f);
         int secondes = Mathf.FloorToInt(temps % 60f);
-        return $"{minutes:00}:{secondes:00}";
+        return $"{minutes:0}:{secondes:00}";
     }
 
     public GamePhase GetPhaseActuelle()
