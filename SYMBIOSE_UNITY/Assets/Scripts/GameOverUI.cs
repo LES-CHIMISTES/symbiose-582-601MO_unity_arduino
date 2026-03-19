@@ -11,31 +11,33 @@ public class GameOverUI : MonoBehaviour
     public GameObject gameOverPanel;
     public TextMeshProUGUI texteTemps;
     public TextMeshProUGUI texteMessage;
-    public CanvasGroup canvasGroup; // Pour le fade
+    public CanvasGroup canvasGroup;
 
     public TextMeshProUGUI texteMeilleurTemps;
+
     [Header("Explosion")]
     public ExplosionBecher explosionBecher;
+
     [Header("Camera Shake")]
     public CameraShakeGameOver cameraShake;
-    [Header("Paramètres")]
-    public float delaiAvantFadeOut = 8f; // 8 secondes avant fade
-    public float dureeFadeOut = 2f; // Durée du fade
 
+    [Header("Paramètres")]
+    public float delaiAvantFadeOut = 8f;
+    public float dureeFadeOut = 2f;
 
     public GameObject[] uiManipulationsContinues;
+
     [Header("OSC")]
     public OSCTransmitter oscTransmitter;
+    public OSCTransmitter oscTransmitterLocal;
 
     void Start()
     {
-        // Cacher au départ
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(false);
         }
 
-        // Ajouter CanvasGroup si pas présent
         if (canvasGroup == null && gameOverPanel != null)
         {
             canvasGroup = gameOverPanel.GetComponent<CanvasGroup>();
@@ -45,7 +47,6 @@ public class GameOverUI : MonoBehaviour
             }
         }
 
-        // Écouter Game Over
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameOver.AddListener(AfficherGameOver);
@@ -64,19 +65,24 @@ public class GameOverUI : MonoBehaviour
 
         gameOverPanel.SetActive(true);
         CacherUIManipulations();
+
         if (explosionBecher != null)
         {
             explosionBecher.Exploser();
         }
+
         if (cameraShake != null)
         {
             cameraShake.DemarrerShake();
         }
+
         EnvoyerOSCGameOver(true);
+
         if (ParticulesPotionController.Instance != null)
         {
             ParticulesPotionController.Instance.SetEtat("gameover");
         }
+
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 1f;
@@ -134,12 +140,11 @@ public class GameOverUI : MonoBehaviour
             }
         }
     }
+
     IEnumerator FadeOutEtRedemarrer()
     {
-        // Attendre 8 secondes
         yield return new WaitForSeconds(delaiAvantFadeOut);
 
-        // Fade out
         float elapsed = 0f;
         float alphaDepart = canvasGroup != null ? canvasGroup.alpha : 1f;
 
@@ -155,64 +160,78 @@ public class GameOverUI : MonoBehaviour
 
             yield return null;
         }
+
         EnvoyerOSCGameOver(false);
         ResetToutOSC();
-        // Recharger la scène (retour au tutoriel)
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         Debug.Log("GAME OVER : Redémarrage automatique");
     }
 
     void EnvoyerOSCGameOver(bool actif)
     {
-        if (oscTransmitter == null) return;
-
         var message = new OSCMessage("/gameover");
         message.AddValue(OSCValue.Int(actif ? 1 : 0));
-        oscTransmitter.Send(message);
+        EnvoyerSurTous(message);
     }
+
     void OnApplicationQuit()
     {
         ResetToutOSC();
     }
+
     public void ResetToutOSC()
     {
-        if (oscTransmitter == null) return;
-
         string[] adressesInt = new string[]
         {
-        "/gameover",
-        "/eau/deplacer",
-        "/feu/angle",
-        "/poudres/key1",
-        "/poudres/key2",
-        "/poudres/key3",
-        "/lumiere/gel",
-        "/lumiere/evaporation",
-        "/lumiere/cristallisation",
-        "/lumiere/vortex"
+            "/gameover",
+            "/eau/deplacer",
+            "/feu/angle",
+            "/poudres/key1",
+            "/poudres/key2",
+            "/poudres/key3",
+            "/lumiere/gel",
+            "/lumiere/evaporation",
+            "/lumiere/cristallisation",
+            "/lumiere/vortex"
         };
 
         string[] adressesFloat = new string[]
         {
-        "/tourbillon/angle",
-        "/tourbillon/delta"
+            "/tourbillon/angle",
+            "/tourbillon/delta"
         };
 
         foreach (string adresse in adressesInt)
         {
             var msg = new OSCMessage(adresse);
             msg.AddValue(OSCValue.Int(0));
-            oscTransmitter.Send(msg);
+            EnvoyerSurTous(msg);
         }
 
         foreach (string adresse in adressesFloat)
         {
             var msg = new OSCMessage(adresse);
             msg.AddValue(OSCValue.Float(0f));
-            oscTransmitter.Send(msg);
+            EnvoyerSurTous(msg);
         }
 
         Debug.Log("OSC : toutes les adresses remises a 0");
+    }
+
+    void EnvoyerSurTous(OSCMessage message)
+    {
+        if (oscTransmitter != null)
+            oscTransmitter.Send(message);
+
+        if (oscTransmitterLocal != null)
+        {
+            var copie = new OSCMessage(message.Address);
+            foreach (var value in message.Values)
+            {
+                copie.AddValue(value);
+            }
+            oscTransmitterLocal.Send(copie);
+        }
     }
 
     IEnumerator PulseRecord()

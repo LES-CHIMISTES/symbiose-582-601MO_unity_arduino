@@ -18,6 +18,7 @@ public class StationTourbillonFeedback : MonoBehaviour
     public float tempsMinAvantChangement = 7f;
     public float tempsMaxAvantChangement = 11f;
     private float intensiteBrassageLissee = 0f;
+	private Image flecheImage;
     [Header("Stabilité")]
     public float perteStabiliteHorsEquilibre = 5f;
 
@@ -55,6 +56,11 @@ public class StationTourbillonFeedback : MonoBehaviour
         ActualiserTempsRequis();
 
         UpdateFlecheDirection();
+		
+		if (flecheDirection != null)
+{
+    flecheImage = flecheDirection.GetComponent<Image>();
+}
 
         // save scale initial cercle progression
         if (cercleProgression != null)
@@ -73,6 +79,25 @@ public class StationTourbillonFeedback : MonoBehaviour
 
         // accumuler rotation dans le bon sens
         bool rotationCorrecteCeFrame = false;
+		
+		// clignotement fleche direction
+if (flecheImage != null)
+{
+    if (rotationCorrecteCeFrame)
+    {
+        Color c = flecheImage.color;
+        c.a = 1f;
+        flecheImage.color = c;
+    }
+    else
+    {
+        float pulse = Mathf.Sin(Time.time * 4f) * 0.5f + 0.5f;
+        float alpha = Mathf.Lerp(0.3f, 1f, pulse);
+        Color c = flecheImage.color;
+        c.a = alpha;
+        flecheImage.color = c;
+    }
+}
 
         if (sensActuel == SensRotation.Horaire && deltaAngle < 0) // horaire = angle diminue
         {
